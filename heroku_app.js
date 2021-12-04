@@ -40,7 +40,7 @@ io.sockets.use((socket, next) => {
     if (token == process.env.WEBSOCKET_TOKEN) {
         return next();
     }
-    //
+    // do not match token
     console.log("authentication error is occured.");
     return next(new Error("authentication error"));
 });
