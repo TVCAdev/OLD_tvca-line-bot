@@ -94,57 +94,59 @@ app.post("/callback", line.middleware(config), (req, res) => {
  * handler called when line message is received.
  */
 function handleEvent(event) {
-    // receive only text message or postback
-    if (event.type !== "message" && event.type !== "postback") {
-        return Promise.resolve(null);
-    }
 
     // If websocket's connection is none, return error message
-    // if (Object.keys(io.sockets.allSockets()).length == 0) {
-    //     return client.replyMessage(event.replyToken, {
-    //         type: "text",
-    //         text: "Websocketが接続されていません。",
-    //     });
-    // } else {
-    // type is message
-    if (event.type == "message") {
-        // return button template
+    if (Object.keys(io.sockets.allSockets()).length == 0) {
         return client.replyMessage(event.replyToken, {
-            type: "template",
-            altText: "This is a buttons template",
-            template: {
-                type: "buttons",
-                title: "お願いしたいこと",
-                text: "アクションを選択してください。",
-                actions: [
-                    {
-                        "type": "postback",
-                        "label": "リビングの現在画像",
-                        "data": "action=getpic"
-                    },
-                ]
-            }
+            type: "text",
+            text: "Websocketが接続されていません。",
         });
-    }
-    // type is postback
-    else {
-        // get sender ID
-        if (event.source.type == "user") {
-            console.log("user " + event.source.userId);
-            senderIDs = senderIDs.push(event.source.userId + "");
-        } else if (event.source.type == "group") {
-            console.log(
-                "group " + event.source.groupId + " " + event.source.userId
-            );
-            senderIDs = senderIDs.push(event.source.groupId + "");
-        } else if (event.source.type == "room") {
-            console.log(
-                "room " + event.source.roomId + " " + event.source.userId
-            );
-            senderIDs = senderIDs.push(event.source.roomId + "");
+    } else {
+        // type is message
+        if (event.type == "message") {
+            // return button template
+            return client.replyMessage(event.replyToken, {
+                type: "template",
+                altText: "This is a buttons template",
+                template: {
+                    type: "buttons",
+                    title: "お願いしたいこと",
+                    text: "アクションを選択してください。",
+                    actions: [
+                        {
+                            "type": "postback",
+                            "label": "リビングの現在画像",
+                            "data": "action=getpic"
+                        },
+                    ]
+                }
+            });
+        }
+        // type is postback
+        else if (event.type == "postback") {
+            // get sender ID
+            if (event.source.type == "user") {
+                console.log("user " + event.source.userId);
+                senderIDs = senderIDs.push(event.source.userId + "");
+            } else if (event.source.type == "group") {
+                console.log(
+                    "group " + event.source.groupId + " " + event.source.userId
+                );
+                senderIDs = senderIDs.push(event.source.groupId + "");
+            } else if (event.source.type == "room") {
+                console.log(
+                    "room " + event.source.roomId + " " + event.source.userId
+                );
+                senderIDs = senderIDs.push(event.source.roomId + "");
+            }
+        }
+        else {
+            // receive only text message or postback
+            if (event.type !== "message" && event.type !== "postback") {
+                return Promise.resolve(null);
+            }
         }
     }
-    // }
 }
 
 // heroku assign process.env.PORT dynamiclly.
