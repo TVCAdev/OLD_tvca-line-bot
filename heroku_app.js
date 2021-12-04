@@ -100,7 +100,7 @@ function handleEvent(event) {
     }
 
     // If websocket's connection is none, return error message
-    if (Object.keys(io.sockets.connected).length == 0) {
+    if (Object.keys(io.sockets.allSockets()).length == 0) {
         return client.replyMessage(event.replyToken, {
             type: "text",
             text: "Websocketが接続されていません。",
