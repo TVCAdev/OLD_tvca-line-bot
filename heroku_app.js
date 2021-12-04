@@ -95,7 +95,7 @@ app.post("/callback", line.middleware(config), (req, res) => {
  */
 function handleEvent(event) {
     // receive only text message or postback
-    if (event.type !== "message" || event.type !== "postback") {
+    if (event.type !== "message" && event.type !== "postback") {
         return Promise.resolve(null);
     }
 
