@@ -53,16 +53,12 @@ io.sockets.use((socket, next) => {
 io.sockets.on("connection", (socket) => {
     console.log("connected from" + socket.id);
 
-    socket.on("SEND_MESSAGE_TO_LINE", (data) => {
-        console.log(data);
+    socket.on("GET_LIVINGPIC", (data) => {
 
         // parse JSON to Object
-        let line_msg = JSON.parse(data);
+        let picdata = JSON.parse(data);
 
-        // create show message
-        let show_msg = "以下のメッセージに対して" + line_msg.action + "が押されました。\n"
-        show_msg += "ボタン押下時間: " + line_msg.action_date_str + "\n\n"
-        show_msg += "> " + line_msg.text
+        // convert picture data
 
         // push api message
         client.pushMessage(line_msg.senderID, {
@@ -96,7 +92,8 @@ app.post("/callback", line.middleware(config), (req, res) => {
 function handleEvent(event) {
 
     // If websocket's connection is none, return error message
-    if (Object.keys(io.sockets.allSockets()).length == 0) {
+    //if (Object.keys(io.sockets.allSockets()).length == 0) {
+    if (io.sockets.size == 0) {
         return client.replyMessage(event.replyToken, {
             type: "text",
             text: "Websocketが接続されていません。",
@@ -139,6 +136,9 @@ function handleEvent(event) {
                 );
                 senderIDs = senderIDs.push(event.source.roomId + "");
             }
+
+            // send message to socket.io clients
+            io.sockets.emit("GET_LIVINGPIC");
         }
         else {
             // receive only text message or postback
