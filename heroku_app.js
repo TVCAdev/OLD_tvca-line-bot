@@ -124,17 +124,27 @@ function handleEvent(event) {
             // get sender ID
             if (event.source.type == "user") {
                 console.log("user " + event.source.userId);
-                senderIDs = senderIDs.push(event.source.userId + "");
+                // if userID is not included in senderIDs
+                if (!senderIDs.includes(event.source.userId)) {
+                    senderIDs.push(event.source.userId + "");
+                }
+
             } else if (event.source.type == "group") {
                 console.log(
                     "group " + event.source.groupId + " " + event.source.userId
                 );
-                senderIDs = senderIDs.push(event.source.groupId + "");
+                // if groupId is not included in senderIDs
+                if (!senderIDs.includes(event.source.groupId)) {
+                    senderIDs.push(event.source.groupId + "");
+                }
             } else if (event.source.type == "room") {
                 console.log(
                     "room " + event.source.roomId + " " + event.source.userId
                 );
-                senderIDs = senderIDs.push(event.source.roomId + "");
+                // if roomId is not included in senderIDs
+                if (!senderIDs.includes(event.source.roomId)) {
+                    senderIDs.push(event.source.roomId + "");
+                }
             }
 
             // send message to socket.io clients
