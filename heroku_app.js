@@ -59,12 +59,19 @@ io.sockets.on("connection", (socket) => {
         let picdata = JSON.parse(data);
 
         // convert picture data
+        let decode_file = Buffer.from(picdata.data, 'base64');
+        //fs.writeFileSync("/tmp/aaa.jpg", decode_file);
 
         // push api message
-        client.pushMessage(line_msg.senderID, {
-            type: "text",
-            text: show_msg,
+        senderIDs.forEach((senderID) => {
+            client.pushMessage(senderID, {
+                type: "image",
+                originalContentUrl: process.env.BASEURL + process.env.ORIGFILE + ".img",
+                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".img",
+            });
         });
+        // delete all elements of senderIDs
+        senderIDs.splice(0);
     });
 });
 
@@ -74,6 +81,14 @@ io.sockets.on("connection", (socket) => {
  */
 io.sockets.on("disconnection", (socket) => {
     console.log("disconnected");
+});
+
+/*
+ * function is called when image files requests.
+ */
+app.get("/" + process.env.ORIGFILE + ".img", (req, res) => {
+    console.log(req.body.events);
+    res.send()
 });
 
 /*
