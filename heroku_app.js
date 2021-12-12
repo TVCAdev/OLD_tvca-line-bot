@@ -59,10 +59,10 @@ io.sockets.on("connection", (socket) => {
         console.log(data);
 
         // parse JSON to Object
-        let picdata = JSON.parse(data);
+        //let picdata = JSON.parse(data);
 
         // convert picture data
-        let decode_file = Buffer.from(picdata.data, 'base64');
+        let decode_file = Buffer.from(data.imgdata, 'base64');
         //fs.writeFileSync("/tmp/aaa.jpg", decode_file);
 
         // push api message
