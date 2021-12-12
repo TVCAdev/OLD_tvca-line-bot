@@ -33,6 +33,12 @@ const client = new line.Client(config);
 let senderIDs = [];
 
 /*
+ * Original Data of Image
+ */
+let origData;
+
+
+/*
  set middlewares.
  this middleware drops packet which does not set the token.
  */
@@ -54,22 +60,15 @@ io.sockets.on("connection", (socket) => {
     console.log("connected from" + socket.id);
 
     socket.on("GET_LIVINGPIC", (data) => {
-
-        console.log(typeof data);
-        console.log(data);
-
-        // parse JSON to Object
-        //let picdata = JSON.parse(data);
-
         // convert picture data
-        let decode_file = Buffer.from(data.imgdata, 'base64');
+        origData = Buffer.from(data.imgdata, 'base64');
         //fs.writeFileSync("/tmp/aaa.jpg", decode_file);
 
         // push api message
         senderIDs.forEach((senderID) => {
             client.pushMessage(senderID, {
                 type: "image",
-                originalContentUrl: process.env.BASEURL + process.env.ORIGFILE + ".img",
+                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".img",
                 previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".img",
             });
         });
@@ -89,9 +88,17 @@ io.sockets.on("disconnection", (socket) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.ORIGFILE + ".img", (req, res) => {
-    console.log(req.body.events);
-    res.send()
+app.get("/" + process.env.ORIGFILENAME + ".img", (req, res) => {
+    console.log(req);
+    res.send(origData)
+});
+
+/*
+ * function is called when image files requests.
+ */
+app.get("/" + process.env.PREVFILENAME + ".img", (req, res) => {
+    console.log(req);
+    res.send(origData)
 });
 
 /*
