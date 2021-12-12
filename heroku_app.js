@@ -55,6 +55,10 @@ io.sockets.on("connection", (socket) => {
 
     socket.on("GET_LIVINGPIC", (data) => {
 
+        console.log(typeof data);
+        console.log('data:');
+        console.log(data);
+
         // parse JSON to Object
         let picdata = JSON.parse(data);
 
