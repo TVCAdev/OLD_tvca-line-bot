@@ -146,25 +146,21 @@ function handleEvent(event) {
         else if (event.type == "postback") {
             // get sender ID
             if (event.source.type == "user") {
-                console.log("user " + event.source.userId);
-                // if userID is not included in senderIDs
+                console.log("user " + event.source.userId + "request living pic.");
+                // if userID is not included in senderIDs, userID is added.
                 if (!senderIDs.includes(event.source.userId)) {
                     senderIDs.push(event.source.userId + "");
                 }
 
             } else if (event.source.type == "group") {
-                console.log(
-                    "group " + event.source.groupId + " " + event.source.userId
-                );
-                // if groupId is not included in senderIDs
+                console.log("group " + event.source.groupId + " " + event.source.userId + "request living pic.");
+                // if groupId is not included in senderIDs, groupId is added.
                 if (!senderIDs.includes(event.source.groupId)) {
                     senderIDs.push(event.source.groupId + "");
                 }
             } else if (event.source.type == "room") {
-                console.log(
-                    "room " + event.source.roomId + " " + event.source.userId
-                );
-                // if roomId is not included in senderIDs
+                console.log("room " + event.source.roomId + " " + event.source.userId + "request living pic.");
+                // if roomId is not included in senderIDs, roomId is added.
                 if (!senderIDs.includes(event.source.roomId)) {
                     senderIDs.push(event.source.roomId + "");
                 }
