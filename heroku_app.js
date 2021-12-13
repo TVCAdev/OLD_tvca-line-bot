@@ -88,7 +88,7 @@ io.sockets.on("disconnection", (socket) => {
  * function is called when image files requests.
  */
 app.get("/" + process.env.ORIGFILENAME + ".img", (req, res) => {
-    console.log(req);
+    // send living pic data
     res.send(origData)
 });
 
@@ -96,7 +96,7 @@ app.get("/" + process.env.ORIGFILENAME + ".img", (req, res) => {
  * function is called when image files requests.
  */
 app.get("/" + process.env.PREVFILENAME + ".img", (req, res) => {
-    console.log(req);
+    // send living pic data
     res.send(origData)
 });
 
@@ -116,8 +116,6 @@ app.post("/callback", line.middleware(config), (req, res) => {
 function handleEvent(event) {
 
     // If websocket's connection is none, return error message
-    //if (Object.keys(io.sockets.allSockets()).length == 0) {
-    //if (io.sockets.size == 0) {
     if (io.engine.clientsCount == 0) {
         return client.replyMessage(event.replyToken, {
             type: "text",
