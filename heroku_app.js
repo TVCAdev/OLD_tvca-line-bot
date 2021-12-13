@@ -37,7 +37,6 @@ let senderIDs = [];
  */
 let origData;
 
-
 /*
  set middlewares.
  this middleware drops packet which does not set the token.
@@ -118,7 +117,8 @@ function handleEvent(event) {
 
     // If websocket's connection is none, return error message
     //if (Object.keys(io.sockets.allSockets()).length == 0) {
-    if (io.sockets.size == 0) {
+    //if (io.sockets.size == 0) {
+    if (io.engine.clientsCount == 0) {
         return client.replyMessage(event.replyToken, {
             type: "text",
             text: "Websocketが接続されていません。",
@@ -177,9 +177,7 @@ function handleEvent(event) {
         }
         else {
             // receive only text message or postback
-            if (event.type !== "message" && event.type !== "postback") {
-                return Promise.resolve(null);
-            }
+            return Promise.resolve(null);
         }
     }
 }
