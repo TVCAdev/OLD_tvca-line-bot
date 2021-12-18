@@ -71,25 +71,23 @@ io.sockets.on("connection", (socket) => {
                 previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".img",
             });
 
-            let dName = ""
-
             // If process.env.ownerID is defined, send messages.
             if (typeof process.env.ownerID !== 'undefined' && process.env.ownerID != senderID) {
-
+                let dName = ""
                 // get user profile
                 if (senderID != null) {
                     client.getProfile(senderID).then((profileData) => {
                         dName = profileData.displayName;
                     });
                 }
-            }
-            // send message to notify
-            client.pushMessage(senderID, {
-                type: "text",
-                text: "リビングの画像が" + dName + "(" + senderID + ")によって取得されました。",
-            });
-        });
 
+                // send message to notify
+                client.pushMessage(senderID, {
+                    type: "text",
+                    text: "リビングの画像が" + dName + "(" + senderID + ")によって取得されました。",
+                });
+            }
+        });
         // delete all elements of senderIDs
         senderIDs.splice(0);
     });
