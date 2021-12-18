@@ -82,7 +82,7 @@ io.sockets.on("connection", (socket) => {
                 }
 
                 // send message to notify
-                client.pushMessage(senderID, {
+                client.pushMessage(process.env.ownerID, {
                     type: "text",
                     text: "リビングの画像が" + dName + "(" + senderID + ")によって取得されました。",
                 });
