@@ -210,9 +210,8 @@ app.get("/" + process.env.LOCATIONNAME, (req, res) => {
 });
 
 // for debug code
-if (typeof process.env.DEBUGGING_CODE !== 'undefined') {
-    setInterval(() => io.emit("GET_LOCATION"), 10000);
-}
+setInterval(() => io.emit("GET_LOCATION"), 10000);
+
 /*
  * function is called when line message is received from LINE.
  */
