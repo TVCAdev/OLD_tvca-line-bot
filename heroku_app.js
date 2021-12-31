@@ -4,8 +4,15 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 
 const app = express();
-const server = require("http").Server(app);
+//const server = require("http").Server(app);
+const fs = require('fs');
+const server = require('https').createServer({
+    key: fs.readFileSync('./privatekey.pem'),
+    cert: fs.readFileSync('./cert.pem'),
+}, app)
+
 const io = require("socket.io")(server);
+const PORT = process.env.PORT || 3000;
 
 /**
  * LINE CHANNEL SECRET
@@ -30,12 +37,35 @@ const client = new line.Client(config);
 /*
  * List of requested userID
  */
-let senderIDs = [];
+let getpicIDs = [];
+let getlocIDs = [];
 
 /*
  * Original Data of Image
  */
 let origData;
+
+/*
+ send notification message to owner user.
+ */
+function sendOwner(senderID, target) {
+    // If process.env.OWNERID is defined, send messages.
+    if (typeof process.env.OWNERID !== 'undefined' && process.env.OWNERID != senderID) {
+        let dName = ""
+        // get user profile
+        if (senderID != null) {
+            client.getProfile(senderID).then((profileData) => {
+                dName = profileData.displayName;
+            });
+        }
+
+        // send message to notify
+        client.pushMessage(process.env.OWNERID, {
+            type: "text",
+            text: target + "が" + dName + "(" + senderID + ")によって取得されました。",
+        });
+    }
+}
 
 /*
  set middlewares.
@@ -64,32 +94,43 @@ io.sockets.on("connection", (socket) => {
         //fs.writeFileSync("/tmp/aaa.jpg", decode_file);
 
         // push api message
-        senderIDs.forEach((senderID) => {
+        getpicIDs.forEach((senderID) => {
             client.pushMessage(senderID, {
                 type: "image",
-                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".img",
-                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".img",
+                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".jpg",
+                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".jpg",
             });
 
-            // If process.env.ownerID is defined, send messages.
-            if (typeof process.env.ownerID !== 'undefined' && process.env.ownerID != senderID) {
-                let dName = ""
-                // get user profile
-                if (senderID != null) {
-                    client.getProfile(senderID).then((profileData) => {
-                        dName = profileData.displayName;
-                    });
-                }
-
-                // send message to notify
-                client.pushMessage(process.env.ownerID, {
-                    type: "text",
-                    text: "リビングの画像が" + dName + "(" + senderID + ")によって取得されました。",
-                });
-            }
+            // send message to owner 
+            sendOwner(senderID, "リビングの画像");
         });
-        // delete all elements of senderIDs
-        senderIDs.splice(0);
+        // delete all elements of getpicIDs
+        getpicIDs.splice(0);
+    });
+
+    socket.on("POST_LOCATION", (data) => {
+        //console.log(data);
+        //console.log(data.latitude);
+        //console.log(data.longitude);
+        // let mapimg = `https://maps.googleapis.com/maps/api/staticmap?size=640x640&scale=2&` +
+        //     `center=${data.latitude},${data.longitude}&maptype=roadmap&key=${process.env.GOOGLE_API_KEY}&` +
+        //     `markers=size:mid|color:red|label:パパ|${data.latitude},${data.longitude}`;
+
+        // push api message
+        getlocIDs.forEach((senderID) => {
+            client.pushMessage(senderID, {
+                type: "location",
+                title: "パパの現在地",
+                address: "パパの現在地",
+                latitude: data.latitude,
+                longitude: data.longitude,
+            });
+
+            // send message to owner 
+            sendOwner(senderID, "パパの現在地");
+        });
+        // delete all elements of getpicIDs
+        getlocIDs.splice(0);
     });
 });
 
@@ -104,7 +145,7 @@ io.sockets.on("disconnection", (socket) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.ORIGFILENAME + ".img", (req, res) => {
+app.get("/" + process.env.ORIGFILENAME + ".jpg", (req, res) => {
     // send living pic data
     res.send(origData)
 });
@@ -112,9 +153,62 @@ app.get("/" + process.env.ORIGFILENAME + ".img", (req, res) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.PREVFILENAME + ".img", (req, res) => {
+app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
     // send living pic data
     res.send(origData)
+});
+
+/*
+ * function is called when line message is received from LINE.
+ */
+app.get("/" + process.env.LOCATIONNAME, (req, res) => {
+    console.log("Received");
+
+    // HTML code for position get
+    let html_contents =
+        `<!DOCTYPE html>
+<html>
+    <head><meta charset="UTF-8" /><title>Get</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <script type="text/javascript">
+            // success function
+            function pos_handler(position) {
+                console.log("pos_handler start...");
+
+                // send latitude, longitude to heroku
+                socket.emit("POST_LOCATION", { latitude: position.coords.latitude, longitude: position.coords.longitude });
+            }
+
+            // error function
+            function error_handler(err) {
+                console.log("ERROR(" + err.code + "): " + err.message);
+
+                socket.emit("POST_LOCATION", { latitude: 0.0, longitude: 0.0 });
+            }
+
+            // connect server
+            const socket = io({
+                query: {
+                    token: "${process.env.WEBSOCKET_TOKEN}"
+                },
+            });
+
+            socket.on("GET_LOCATION", () => {
+                console.log("GET_LOCATION Received...");
+                navigator.geolocation.getCurrentPosition(pos_handler, error_handler, { enableHighAccuracy: true });
+            });
+        </script>
+    </head>
+
+    <body>
+        Do not close this page because of running script for getting location.
+    </body>
+</html>`
+
+    // return HTML
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.write(html_contents);
+    res.end();
 });
 
 /*
@@ -155,36 +249,54 @@ function handleEvent(event) {
                             "label": "リビングの現在画像",
                             "data": "action=getpic"
                         },
-                    ]
+                        {
+                            "type": "postback",
+                            "label": "パパの現在地",
+                            "data": "action=getloc"
+                        },]
                 }
             });
         }
         // type is postback
         else if (event.type == "postback") {
-            // get sender ID
-            if (event.source.type == "user") {
-                console.log("user " + event.source.userId + "request living pic.");
-                // if userID is not included in senderIDs, userID is added.
-                if (!senderIDs.includes(event.source.userId)) {
-                    senderIDs.push(event.source.userId + "");
-                }
 
-            } else if (event.source.type == "group") {
-                console.log("group " + event.source.groupId + " " + event.source.userId + "request living pic.");
-                // if groupId is not included in senderIDs, groupId is added.
-                if (!senderIDs.includes(event.source.groupId)) {
-                    senderIDs.push(event.source.groupId + "");
-                }
-            } else if (event.source.type == "room") {
-                console.log("room " + event.source.roomId + " " + event.source.userId + "request living pic.");
-                // if roomId is not included in senderIDs, roomId is added.
-                if (!senderIDs.includes(event.source.roomId)) {
-                    senderIDs.push(event.source.roomId + "");
+            // function for setting sender IDs
+            function set_senderIDs(setIDs) {
+                // get sender ID
+                if (event.source.type == "user") {
+                    console.log("user " + event.source.userId);
+                    // if userID is not included in setIDs, userID is added.
+                    if (!setIDs.includes(event.source.userId)) {
+                        setIDs.push(event.source.userId + "");
+                    }
+
+                } else if (event.source.type == "group") {
+                    console.log("group " + event.source.groupId + " " + event.source.userId);
+                    // if groupId is not included in setIDs, groupId is added.
+                    if (!setIDs.includes(event.source.groupId)) {
+                        setIDs.push(event.source.groupId + "");
+                    }
+                } else if (event.source.type == "room") {
+                    console.log("room " + event.source.roomId + " " + event.source.userId);
+                    // if roomId is not included in setIDs, roomId is added.
+                    if (!setIDs.includes(event.source.roomId)) {
+                        setIDs.push(event.source.roomId + "");
+                    }
                 }
             }
 
-            // send message to socket.io clients
-            io.sockets.emit("GET_LIVINGPIC");
+            if (event.postback.data == "action=getpic") {
+                set_senderIDs(getpicIDs)
+                // send GET_LIVINGPIC message to socket.io clients
+                io.sockets.emit("GET_LIVINGPIC");
+            }
+            else if (event.postback.data == "action=getloc") {
+                set_senderIDs(getlocIDs)
+
+                // send GET_LOCATION message to socket.io clients
+                io.sockets.emit("GET_LOCATION");
+            }
+
         }
         else {
             // receive only text message or postback
@@ -194,5 +306,5 @@ function handleEvent(event) {
 }
 
 // heroku assign process.env.PORT dynamiclly.
-server.listen(process.env.PORT);
-console.log(`Server running at ${process.env.PORT}`);
+server.listen(PORT);
+console.log(`Server running at ${PORT}`);
