@@ -91,6 +91,7 @@ io.sockets.on("connection", (socket) => {
     console.log("connected from" + socket.id);
 
     socket.on("GET_LIVINGPIC", (data) => {
+        console.log("reply of GET_LIVINGPIC was received")
         // convert picture data
         origData = Buffer.from(data.imgdata, 'base64');
         //fs.writeFileSync("/tmp/aaa.jpg", decode_file);
@@ -111,12 +112,7 @@ io.sockets.on("connection", (socket) => {
     });
 
     socket.on("POST_LOCATION", (data) => {
-        //console.log(data);
-        //console.log(data.latitude);
-        //console.log(data.longitude);
-        // let mapimg = `https://maps.googleapis.com/maps/api/staticmap?size=640x640&scale=2&` +
-        //     `center=${data.latitude},${data.longitude}&maptype=roadmap&key=${process.env.GOOGLE_API_KEY}&` +
-        //     `markers=size:mid|color:red|label:パパ|${data.latitude},${data.longitude}`;
+        console.log(`reply of GET_LOCATION was received. latitude:${data.latitude} longitude:${data.longitude}`)
 
         // push api message
         getlocIDs.forEach((senderID) => {
@@ -164,7 +160,7 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
  * function is called when line message is received from LINE.
  */
 app.get("/" + process.env.LOCATIONNAME, (req, res) => {
-    console.log("Received");
+    console.log(process.env.LOCATIONNAME + " was opend.");
 
     // HTML code for position get
     let html_contents =
@@ -213,6 +209,10 @@ app.get("/" + process.env.LOCATIONNAME, (req, res) => {
     res.end();
 });
 
+// for debug code
+if (typeof process.env.DEBUGGING_CODE !== 'undefined') {
+    setInterval(() => io.emit("GET_LOCATION"), 10000);
+}
 /*
  * function is called when line message is received from LINE.
  */
@@ -290,12 +290,16 @@ function handleEvent(event) {
             if (event.postback.data == "action=getpic") {
                 set_senderIDs(getpicIDs)
                 // send GET_LIVINGPIC message to socket.io clients
+                console.log("GET_LIVINGPIC was fired.");
+
+                // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
                 io.sockets.emit("GET_LIVINGPIC");
             }
             else if (event.postback.data == "action=getloc") {
                 set_senderIDs(getlocIDs)
+                console.log("GET_LIVINGPIC was fired.");
 
-                // send GET_LOCATION message to socket.io clients
+                // send GET_LOCATION message to socket.io clients(target is father's smartphone.)
                 io.sockets.emit("GET_LOCATION");
             }
 
