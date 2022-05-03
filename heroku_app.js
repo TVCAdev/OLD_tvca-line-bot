@@ -159,62 +159,6 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
 /*
  * function is called when line message is received from LINE.
  */
-app.get("/" + process.env.LOCATIONNAME, (req, res) => {
-    console.log(process.env.LOCATIONNAME + " was opend.");
-
-    // HTML code for position get
-    let html_contents =
-        `<!DOCTYPE html>
-<html>
-    <head><meta charset="UTF-8" /><title>Get</title>
-        <script src="/socket.io/socket.io.js"></script>
-        <script type="text/javascript">
-            // success function
-            function pos_handler(position) {
-                console.log("pos_handler start...");
-
-                // send latitude, longitude to heroku
-                socket.emit("POST_LOCATION", { latitude: position.coords.latitude, longitude: position.coords.longitude });
-            }
-
-            // error function
-            function error_handler(err) {
-                console.log("ERROR(" + err.code + "): " + err.message);
-
-                socket.emit("POST_LOCATION", { latitude: 0.0, longitude: 0.0 });
-            }
-
-            // connect server
-            const socket = io({
-                query: {
-                    token: "${process.env.WEBSOCKET_TOKEN}"
-                },
-            });
-
-            socket.on("GET_LOCATION", () => {
-                console.log("GET_LOCATION Received...");
-                navigator.geolocation.getCurrentPosition(pos_handler, error_handler, { enableHighAccuracy: true });
-            });
-        </script>
-    </head>
-
-    <body>
-        Do not close this page because of running script for getting location.
-    </body>
-</html>`
-
-    // return HTML
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.write(html_contents);
-    res.end();
-});
-
-// for debug code
-// setInterval(() => io.emit("GET_LOCATION"), 10000);
-
-/*
- * function is called when line message is received from LINE.
- */
 app.post("/callback", line.middleware(config), (req, res) => {
     console.log(req.body.events);
     Promise.all(req.body.events.map(handleEvent)).then((result) =>
