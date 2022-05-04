@@ -87,6 +87,7 @@ function sendOwner(senderID, target) {
  */
 function sendNotification() {
     // This registration token comes from the client FCM SDKs.
+    // This is test data.
     const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
 
     const message = {
