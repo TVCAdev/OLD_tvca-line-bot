@@ -6,6 +6,8 @@ const line = require("@line/bot-sdk");
 const app = express();
 const server = require("http").Server(app);
 
+const firebaseadmin = require("firebase-admin");
+
 // for debug code
 // const fs = require('fs');
 // const server = require('https').createServer({
@@ -48,7 +50,18 @@ let getlocIDs = [];
 let origData;
 
 /*
- send notification message to owner user.
+ * Initialize Firebase
+ */
+firebaseadmin.initializeApp({
+    credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY
+    })
+});
+
+/*
+ send line message to owner user.
  */
 function sendOwner(senderID, target) {
     // If process.env.OWNERID is defined, send messages.
@@ -67,6 +80,32 @@ function sendOwner(senderID, target) {
             text: target + "が" + dName + "(" + senderID + ")によって取得されました。",
         });
     }
+}
+
+/*
+ send notification message for getting location.
+ */
+function sendNotification() {
+    // This registration token comes from the client FCM SDKs.
+    const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
+
+    const message = {
+        data: {
+            action: 'GET_LOCATION'
+        },
+        token: registrationToken
+    };
+
+    // Send a message to the device corresponding to the provided
+    // registration token.
+    firebaseadmin.messaging().send(message)
+        .then((response) => {
+            // Response is a message ID string.
+            console.log('Successfully sent message:', response);
+        })
+        .catch((error) => {
+            console.log('Error sending message:', error);
+        });
 }
 
 /*
@@ -240,10 +279,10 @@ function handleEvent(event) {
             }
             else if (event.postback.data == "action=getloc") {
                 set_senderIDs(getlocIDs)
-                console.log("GET_LIVINGPIC was fired.");
+                console.log("GET_LOCATION was fired.");
 
-                // send GET_LOCATION message to socket.io clients(target is father's smartphone.)
-                io.sockets.emit("GET_LOCATION");
+                // send firebase notification to clients(target is father's smartphone.)
+                sendNotification();
             }
 
         }
