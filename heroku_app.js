@@ -150,26 +150,6 @@ io.sockets.on("connection", (socket) => {
         // delete all elements of getpicIDs
         getpicIDs.splice(0);
     });
-
-    socket.on("POST_LOCATION", (data) => {
-        console.log(`reply of GET_LOCATION was received. latitude:${data.latitude} longitude:${data.longitude}`)
-
-        // push api message
-        getlocIDs.forEach((senderID) => {
-            client.pushMessage(senderID, {
-                type: "location",
-                title: "パパの現在地",
-                address: "パパの現在地",
-                latitude: data.latitude,
-                longitude: data.longitude,
-            });
-
-            // send message to owner 
-            sendOwner(senderID, "パパの現在地");
-        });
-        // delete all elements of getpicIDs
-        getlocIDs.splice(0);
-    });
 });
 
 /*
@@ -195,6 +175,36 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
     // send living pic data
     res.send(origData)
 });
+
+/*
+ * function is called when father's smartphone sended location information.
+ */
+app.post(process.env.LOCATION_URL, express.json(), (req, res) => {
+    console.log(req.body);
+});
+/*
+app.post("/callback", line.middleware(config), (req, res) => {
+    socket.on("POST_LOCATION", (data) => {
+        console.log(`reply of GET_LOCATION was received. latitude:${data.latitude} longitude:${data.longitude}`)
+
+        // push api message
+        getlocIDs.forEach((senderID) => {
+            client.pushMessage(senderID, {
+                type: "location",
+                title: "パパの現在地",
+                address: "パパの現在地",
+                latitude: data.latitude,
+                longitude: data.longitude,
+            });
+
+            // send message to owner 
+            sendOwner(senderID, "パパの現在地");
+        });
+        // delete all elements of getpicIDs
+        getlocIDs.splice(0);
+    });
+});
+*/
 
 /*
  * function is called when line message is received from LINE.
