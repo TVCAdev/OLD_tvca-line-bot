@@ -180,7 +180,7 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
  * function is called when father's smartphone sended location information.
  */
 app.post(process.env.LOCATION_URL, express.json(), (req, res) => {
-    console.log(req.body);
+    console.log("req.body: " + req.body);
 });
 /*
 app.post("/callback", line.middleware(config), (req, res) => {
