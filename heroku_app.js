@@ -190,7 +190,7 @@ app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
     // case of response getting location
     else if (('latitude' in req.body) && ('longitude' in req.body)
         && req.body.latitude != null && req.body.longitude != null) {
-        console.log("reply of GET_LOCATION was received. latitude:${req.body.latitude} longitude:${req.body.longitude}");
+        console.log("reply of GET_LOCATION was received. latitude:" + req.body.latitude + " longitude: " + req.body.longitude + ".");
 
         // push api message
         getlocIDs.forEach((senderID) => {
@@ -198,8 +198,8 @@ app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
                 type: "location",
                 title: "パパの現在地",
                 address: "パパの現在地",
-                latitude: data.latitude,
-                longitude: data.longitude,
+                latitude: req.body.latitude,
+                longitude: req.body.longitude,
             });
 
             // send message to owner 
