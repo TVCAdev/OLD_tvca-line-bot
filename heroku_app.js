@@ -181,11 +181,16 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
  */
 app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
     console.log("req.body: " + req.body);
-});
-/*
-app.post("/callback", line.middleware(config), (req, res) => {
-    socket.on("POST_LOCATION", (data) => {
-        console.log(`reply of GET_LOCATION was received. latitude:${data.latitude} longitude:${data.longitude}`)
+
+    // case of register token
+    if ('token' in req.body) {
+        // tokenをデータベースに登録する。
+
+    }
+    // case of response getting location
+    else if (('latitude' in req.body) && ('longitude' in req.body)
+        && req.body.latitude != null && req.body.longitude != null) {
+        console.log("reply of GET_LOCATION was received. latitude:${req.body.latitude} longitude:${req.body.longitude}");
 
         // push api message
         getlocIDs.forEach((senderID) => {
@@ -202,9 +207,13 @@ app.post("/callback", line.middleware(config), (req, res) => {
         });
         // delete all elements of getpicIDs
         getlocIDs.splice(0);
-    });
+    }
+    else {
+        console.log("json data was not set...");
+    }
+
+    res.status(200).end()
 });
-*/
 
 /*
  * function is called when line message is received from LINE.
