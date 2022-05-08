@@ -90,33 +90,38 @@ function sendOwner(senderID, target) {
 function sendNotification() {
     // get token from location document.
     const locRef = db.collection('config').doc('location');
-    const doc = await locRef.get();
-    if (!doc.exists) {
-        console.log('document location was not exist.');
-    } else {
-        console.log('Document data:', doc.data());
-    }
+    locRef.get()
+        .then(doc => {
+            if (!doc.exists) {
+                console.log('document location was not exist.');
+            } else {
+                console.log('Document data:', doc.data());
 
-    // This registration token comes from the client FCM SDKs.
-    // This is test data.
-    const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
+                // This registration token comes from the client FCM SDKs.
+                // This is test data.
+                const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
 
-    const message = {
-        data: {
-            action: 'GET_LOCATION'
-        },
-        token: registrationToken
-    };
+                const message = {
+                    data: {
+                        action: 'GET_LOCATION'
+                    },
+                    token: registrationToken
+                };
 
-    // Send a message to the device corresponding to the provided
-    // registration token.
-    firebaseadmin.messaging().send(message)
-        .then((response) => {
-            // Response is a message ID string.
-            console.log('Successfully sent message:', response);
+                // Send a message to the device corresponding to the provided
+                // registration token.
+                firebaseadmin.messaging().send(message)
+                    .then((response) => {
+                        // Response is a message ID string.
+                        console.log('Successfully sent message:', response);
+                    })
+                    .catch((error) => {
+                        console.log('Error sending message:', error);
+                    });
+            }
         })
         .catch((error) => {
-            console.log('Error sending message:', error);
+            console.log('getting document location was error.:', error);
         });
 }
 
@@ -196,11 +201,16 @@ app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
     // case of register token
     if (('token' in req.body) && req.body.token != null) {
         // register token to firebase cloud firestore
-        const docRef = db.collection('config').doc('location');
+        const locRef = db.collection('config').doc('location');
 
-        await docRef.set({
-            token: req.body.token
-        });
+        docRef.set({ token: req.body.token })
+            .then(ref => {
+                console.log("registering token was succeed.");
+            })
+            .catch(error => {
+                console.log("registering token was failed...:", error);
+                next(error);
+            });
     }
     // case of response getting location
     else if (('latitude' in req.body) && ('longitude' in req.body)
