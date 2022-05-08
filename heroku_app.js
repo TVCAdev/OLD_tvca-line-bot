@@ -60,6 +60,8 @@ firebaseadmin.initializeApp({
     })
 });
 
+const db = firebaseadmin.firestore.getFirestore();
+
 /*
  send line message to owner user.
  */
@@ -86,6 +88,15 @@ function sendOwner(senderID, target) {
  send notification message for getting location.
  */
 function sendNotification() {
+    // get token from location document.
+    const locRef = db.collection('config').doc('location');
+    const doc = await locRef.get();
+    if (!doc.exists) {
+        console.log('document location was not exist.');
+    } else {
+        console.log('Document data:', doc.data());
+    }
+
     // This registration token comes from the client FCM SDKs.
     // This is test data.
     const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
@@ -180,12 +191,16 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
  * function is called when father's smartphone sended location information.
  */
 app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
-    console.log("req.body: " + req.body);
+    console.log("LOCATION_URL called...");
 
     // case of register token
-    if ('token' in req.body) {
-        // tokenをデータベースに登録する。
+    if (('token' in req.body) && req.body.token != null) {
+        // register token to firebase cloud firestore
+        const docRef = db.collection('config').doc('location');
 
+        await docRef.set({
+            token: req.body.token
+        });
     }
     // case of response getting location
     else if (('latitude' in req.body) && ('longitude' in req.body)
