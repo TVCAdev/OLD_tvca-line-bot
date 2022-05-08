@@ -6,7 +6,9 @@ const line = require("@line/bot-sdk");
 const app = express();
 const server = require("http").Server(app);
 
-const firebaseadmin = require("firebase-admin");
+const firebaseadmin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
 // for debug code
 // const fs = require('fs');
@@ -52,15 +54,15 @@ let origData;
 /*
  * Initialize Firebase
  */
-firebaseadmin.initializeApp({
-    credential: firebaseadmin.credential.cert({
+initializeApp({
+    credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
     })
 });
 
-const db = firebaseadmin.firestore.getFirestore();
+const db = getFirestore();
 
 /*
  send line message to owner user.
