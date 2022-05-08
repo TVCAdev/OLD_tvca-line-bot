@@ -205,7 +205,7 @@ app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
         // register token to firebase cloud firestore
         const locRef = db.collection('config').doc('location');
 
-        docRef.set({ token: req.body.token })
+        locRef.set({ token: req.body.token })
             .then(ref => {
                 console.log("registering token was succeed.");
             })
