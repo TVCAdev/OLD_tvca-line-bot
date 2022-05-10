@@ -97,7 +97,7 @@ function sendNotification() {
             if (!doc.exists) {
                 console.log('document location was not exist.');
             } else {
-                dbdata = doc.data()
+                const dbdata = doc.data()
                 console.log('Document data:', dbdata);
 
                 // get registration token
