@@ -97,29 +97,31 @@ function sendNotification() {
             if (!doc.exists) {
                 console.log('document location was not exist.');
             } else {
-                console.log('Document data:', doc.data());
+                dbdata = doc.data()
+                console.log('Document data:', dbdata);
 
-                // This registration token comes from the client FCM SDKs.
-                // This is test data.
-                const registrationToken = 'dSAxhy16SfWzmzvwr9hYQ5:APA91bEfyNDcPdxdhsDpOTl3ZFWcSVOOfgEnbIGhnJtp-_z32cfRC3eCSeyw0LQfBEGmgAH0lArVX5klFBia3-EJH9LRWYb5b2dksBqkILUxNkZIfWie5uC71s1zqjiqntXegc7c_y8R';
+                // get registration token
+                if (token in dbdata) {
+                    const message = {
+                        data: {
+                            action: 'GET_LOCATION'
+                        },
+                        token: dbdata.token
+                    };
 
-                const message = {
-                    data: {
-                        action: 'GET_LOCATION'
-                    },
-                    token: registrationToken
-                };
-
-                // Send a message to the device corresponding to the provided
-                // registration token.
-                firebaseadmin.messaging().send(message)
-                    .then((response) => {
-                        // Response is a message ID string.
-                        console.log('Successfully sent message:', response);
-                    })
-                    .catch((error) => {
-                        console.log('Error sending message:', error);
-                    });
+                    // Send a message to the device corresponding to the provided
+                    // registration token.
+                    firebaseadmin.messaging().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                } else {
+                    console.log('token was not registerd');
+                }
             }
         })
         .catch((error) => {
