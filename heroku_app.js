@@ -101,7 +101,7 @@ function sendNotification() {
                 console.log('Document data:', dbdata);
 
                 // get registration token
-                if (token in dbdata) {
+                if ("token" in dbdata) {
                     const message = {
                         data: {
                             action: 'GET_LOCATION'
