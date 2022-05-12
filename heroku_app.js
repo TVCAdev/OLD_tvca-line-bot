@@ -4,7 +4,7 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 
 const app = express();
-const server = require("http").Server(app);
+const server = require("https").Server(app);
 
 const firebaseadmin = require('firebase-admin');
 const { initializeApp, cert } = require('firebase-admin/app');
