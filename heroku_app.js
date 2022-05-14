@@ -21,6 +21,21 @@ const io = require("socket.io")(server);
 const PORT = process.env.PORT || 3000;
 
 /**
+ * CHECK URL TOKEN AUTHENTICATION ALWAYS
+ */
+
+const check_url_token = function (req, res, next) {
+    if ((req.query.url_token !== 'undefined') && (req.query.url_token == process.env.URL_TOKEN)) {
+        next()
+    }
+    else {
+        res.status(401).end()
+    }
+}
+
+app.use(check_url_token)
+
+/**
  * LINE CHANNEL SECRET
  */
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
@@ -160,8 +175,8 @@ io.sockets.on("connection", (socket) => {
         getpicIDs.forEach((senderID) => {
             client.pushMessage(senderID, {
                 type: "image",
-                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".jpg",
-                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".jpg",
+                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".jpg?url_token=" + process.env.URL_TOKEN,
+                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".jpg?url_token=" + process.env.URL_TOKEN,
             });
 
             // send message to owner 
@@ -213,7 +228,6 @@ app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
             })
             .catch(error => {
                 console.log("registering token was failed...:", error);
-                next(error);
             });
     }
     // case of response getting location
