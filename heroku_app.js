@@ -6,6 +6,10 @@ const line = require("@line/bot-sdk");
 const app = express();
 const server = require("http").Server(app);
 
+const firebaseadmin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+
 // for debug code
 // const fs = require('fs');
 // const server = require('https').createServer({
@@ -15,6 +19,19 @@ const server = require("http").Server(app);
 
 const io = require("socket.io")(server);
 const PORT = process.env.PORT || 3000;
+
+/**
+ * FUNCTION FOR CHECKING URL TOKEN AUTHENTICATION
+ */
+
+const check_url_token = function (req, res, next) {
+    if ((req.query.url_token !== 'undefined') && (req.query.url_token == process.env.URL_TOKEN)) {
+        next()
+    }
+    else {
+        res.status(401).end()
+    }
+}
 
 /**
  * LINE CHANNEL SECRET
@@ -48,7 +65,20 @@ let getlocIDs = [];
 let origData;
 
 /*
- send notification message to owner user.
+ * Initialize Firebase
+ */
+initializeApp({
+    credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    })
+});
+
+const db = getFirestore();
+
+/*
+ send line message to owner user.
  */
 function sendOwner(senderID, target) {
     // If process.env.OWNERID is defined, send messages.
@@ -67,6 +97,49 @@ function sendOwner(senderID, target) {
             text: target + "が" + dName + "(" + senderID + ")によって取得されました。",
         });
     }
+}
+
+/*
+ send notification message for getting location.
+ */
+function sendNotification() {
+    // get token from location document.
+    const locRef = db.collection('config').doc('location');
+    locRef.get()
+        .then(doc => {
+            if (!doc.exists) {
+                console.log('document location was not exist.');
+            } else {
+                const dbdata = doc.data()
+                console.log('Document data:', dbdata);
+
+                // get registration token
+                if ("token" in dbdata) {
+                    const message = {
+                        data: {
+                            action: 'GET_LOCATION'
+                        },
+                        token: dbdata.token
+                    };
+
+                    // Send a message to the device corresponding to the provided
+                    // registration token.
+                    firebaseadmin.messaging().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                } else {
+                    console.log('token was not registerd');
+                }
+            }
+        })
+        .catch((error) => {
+            console.log('getting document location was error.:', error);
+        });
 }
 
 /*
@@ -100,8 +173,8 @@ io.sockets.on("connection", (socket) => {
         getpicIDs.forEach((senderID) => {
             client.pushMessage(senderID, {
                 type: "image",
-                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".jpg",
-                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".jpg",
+                originalContentUrl: process.env.BASEURL + process.env.ORIGFILENAME + ".jpg?url_token=" + process.env.URL_TOKEN,
+                previewImageUrl: process.env.BASEURL + process.env.PREVFILENAME + ".jpg?url_token=" + process.env.URL_TOKEN,
             });
 
             // send message to owner 
@@ -109,26 +182,6 @@ io.sockets.on("connection", (socket) => {
         });
         // delete all elements of getpicIDs
         getpicIDs.splice(0);
-    });
-
-    socket.on("POST_LOCATION", (data) => {
-        console.log(`reply of GET_LOCATION was received. latitude:${data.latitude} longitude:${data.longitude}`)
-
-        // push api message
-        getlocIDs.forEach((senderID) => {
-            client.pushMessage(senderID, {
-                type: "location",
-                title: "パパの現在地",
-                address: "パパの現在地",
-                latitude: data.latitude,
-                longitude: data.longitude,
-            });
-
-            // send message to owner 
-            sendOwner(senderID, "パパの現在地");
-        });
-        // delete all elements of getpicIDs
-        getlocIDs.splice(0);
     });
 });
 
@@ -143,7 +196,7 @@ io.sockets.on("disconnection", (socket) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.ORIGFILENAME + ".jpg", (req, res) => {
+app.get("/" + process.env.ORIGFILENAME + ".jpg", check_url_token, (req, res) => {
     // send living pic data
     res.send(origData)
 });
@@ -151,9 +204,56 @@ app.get("/" + process.env.ORIGFILENAME + ".jpg", (req, res) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
+app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => {
     // send living pic data
     res.send(origData)
+});
+
+/*
+ * function is called when father's smartphone sended location information.
+ */
+app.post("/" + process.env.LOCATION_URL, check_url_token, express.json(), (req, res) => {
+    console.log("LOCATION_URL called...");
+
+    // case of register token
+    if (('token' in req.body) && req.body.token != null) {
+        // register token to firebase cloud firestore
+        const locRef = db.collection('config').doc('location');
+
+        locRef.set({ token: req.body.token })
+            .then(ref => {
+                console.log("registering token was succeed.");
+            })
+            .catch(error => {
+                console.log("registering token was failed...:", error);
+            });
+    }
+    // case of response getting location
+    else if (('latitude' in req.body) && ('longitude' in req.body)
+        && req.body.latitude != null && req.body.longitude != null) {
+        console.log("reply of GET_LOCATION was received. latitude:" + req.body.latitude + " longitude: " + req.body.longitude + ".");
+
+        // push api message
+        getlocIDs.forEach((senderID) => {
+            client.pushMessage(senderID, {
+                type: "location",
+                title: "パパの現在地",
+                address: "パパの現在地",
+                latitude: req.body.latitude,
+                longitude: req.body.longitude,
+            });
+
+            // send message to owner 
+            sendOwner(senderID, "パパの現在地");
+        });
+        // delete all elements of getpicIDs
+        getlocIDs.splice(0);
+    }
+    else {
+        console.log("json data was not set...");
+    }
+
+    res.status(200).end()
 });
 
 /*
@@ -240,10 +340,10 @@ function handleEvent(event) {
             }
             else if (event.postback.data == "action=getloc") {
                 set_senderIDs(getlocIDs)
-                console.log("GET_LIVINGPIC was fired.");
+                console.log("GET_LOCATION was fired.");
 
-                // send GET_LOCATION message to socket.io clients(target is father's smartphone.)
-                io.sockets.emit("GET_LOCATION");
+                // send firebase notification to clients(target is father's smartphone.)
+                sendNotification();
             }
 
         }
