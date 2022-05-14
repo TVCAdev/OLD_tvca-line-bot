@@ -21,7 +21,7 @@ const io = require("socket.io")(server);
 const PORT = process.env.PORT || 3000;
 
 /**
- * CHECK URL TOKEN AUTHENTICATION ALWAYS
+ * FUNCTION FOR CHECKING URL TOKEN AUTHENTICATION
  */
 
 const check_url_token = function (req, res, next) {
@@ -32,8 +32,6 @@ const check_url_token = function (req, res, next) {
         res.status(401).end()
     }
 }
-
-app.use(check_url_token)
 
 /**
  * LINE CHANNEL SECRET
@@ -198,7 +196,7 @@ io.sockets.on("disconnection", (socket) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.ORIGFILENAME + ".jpg", (req, res) => {
+app.get("/" + process.env.ORIGFILENAME + ".jpg", check_url_token, (req, res) => {
     // send living pic data
     res.send(origData)
 });
@@ -206,7 +204,7 @@ app.get("/" + process.env.ORIGFILENAME + ".jpg", (req, res) => {
 /*
  * function is called when image files requests.
  */
-app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
+app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => {
     // send living pic data
     res.send(origData)
 });
@@ -214,7 +212,7 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", (req, res) => {
 /*
  * function is called when father's smartphone sended location information.
  */
-app.post("/" + process.env.LOCATION_URL, express.json(), (req, res) => {
+app.post("/" + process.env.LOCATION_URL, check_url_token, express.json(), (req, res) => {
     console.log("LOCATION_URL called...");
 
     // case of register token
