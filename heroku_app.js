@@ -58,6 +58,7 @@ const client = new line.Client(config);
  */
 let getpicIDs = [];
 let getlocIDs = [];
+let getTVStsIDs = [];
 
 /*
  * Original Data of Image
@@ -183,177 +184,193 @@ io.sockets.on("connection", (socket) => {
         // delete all elements of getpicIDs
         getpicIDs.splice(0);
     });
-});
 
-/*
- set callback.
- this callback is called when disconnection of websocket is requested.
- */
-io.sockets.on("disconnection", (socket) => {
-    console.log("disconnected");
-});
+    socket.on("GET_TV_STATUS", (data) => {
+        console.log("reply of GET_TV_STATUS was received")
+    });
 
-/*
- * function is called when image files requests.
- */
-app.get("/" + process.env.ORIGFILENAME + ".jpg", check_url_token, (req, res) => {
-    // send living pic data
-    res.send(origData)
-});
+    /*
+     set callback.
+     this callback is called when disconnection of websocket is requested.
+     */
+    io.sockets.on("disconnection", (socket) => {
+        console.log("disconnected");
+    });
 
-/*
- * function is called when image files requests.
- */
-app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => {
-    // send living pic data
-    res.send(origData)
-});
+    /*
+     * function is called when image files requests.
+     */
+    app.get("/" + process.env.ORIGFILENAME + ".jpg", check_url_token, (req, res) => {
+        // send living pic data
+        res.send(origData)
+    });
 
-/*
- * function is called when father's smartphone sended location information.
- */
-app.post("/" + process.env.LOCATION_URL, check_url_token, express.json(), (req, res) => {
-    console.log("LOCATION_URL called...");
+    /*
+     * function is called when image files requests.
+     */
+    app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => {
+        // send living pic data
+        res.send(origData)
+    });
 
-    // case of register token
-    if (('token' in req.body) && req.body.token != null) {
-        // register token to firebase cloud firestore
-        const locRef = db.collection('config').doc('location');
+    /*
+     * function is called when father's smartphone sended location information.
+     */
+    app.post("/" + process.env.LOCATION_URL, check_url_token, express.json(), (req, res) => {
+        console.log("LOCATION_URL called...");
 
-        locRef.set({ token: req.body.token })
-            .then(ref => {
-                console.log("registering token was succeed.");
-            })
-            .catch(error => {
-                console.log("registering token was failed...:", error);
-            });
-    }
-    // case of response getting location
-    else if (('latitude' in req.body) && ('longitude' in req.body)
-        && req.body.latitude != null && req.body.longitude != null) {
-        console.log("reply of GET_LOCATION was received. latitude:" + req.body.latitude + " longitude: " + req.body.longitude + ".");
+        // case of register token
+        if (('token' in req.body) && req.body.token != null) {
+            // register token to firebase cloud firestore
+            const locRef = db.collection('config').doc('location');
 
-        // push api message
-        getlocIDs.forEach((senderID) => {
-            client.pushMessage(senderID, {
-                type: "location",
-                title: "パパの現在地",
-                address: "パパの現在地",
-                latitude: req.body.latitude,
-                longitude: req.body.longitude,
-            });
-
-            // send message to owner 
-            sendOwner(senderID, "パパの現在地");
-        });
-        // delete all elements of getpicIDs
-        getlocIDs.splice(0);
-    }
-    else {
-        console.log("json data was not set...");
-    }
-
-    res.status(200).end()
-});
-
-/*
- * function is called when line message is received from LINE.
- */
-app.post("/callback", line.middleware(config), (req, res) => {
-    console.log(req.body.events);
-    Promise.all(req.body.events.map(handleEvent)).then((result) =>
-        res.json(result)
-    );
-});
-
-/**
- * handler called when line message is received.
- */
-function handleEvent(event) {
-
-    // If websocket's connection is none, return error message
-    if (io.engine.clientsCount == 0) {
-        return client.replyMessage(event.replyToken, {
-            type: "text",
-            text: "Websocketが接続されていません。",
-        });
-    } else {
-        // type is message
-        if (event.type == "message") {
-            // return button template
-            return client.replyMessage(event.replyToken, {
-                type: "template",
-                altText: "This is a buttons template",
-                template: {
-                    type: "buttons",
-                    title: "お願いしたいこと",
-                    text: "アクションを選択してください。",
-                    actions: [
-                        {
-                            "type": "postback",
-                            "label": "リビングの現在画像",
-                            "data": "action=getpic"
-                        },
-                        {
-                            "type": "postback",
-                            "label": "パパの現在地",
-                            "data": "action=getloc"
-                        },]
-                }
-            });
+            locRef.set({ token: req.body.token })
+                .then(ref => {
+                    console.log("registering token was succeed.");
+                })
+                .catch(error => {
+                    console.log("registering token was failed...:", error);
+                });
         }
-        // type is postback
-        else if (event.type == "postback") {
+        // case of response getting location
+        else if (('latitude' in req.body) && ('longitude' in req.body)
+            && req.body.latitude != null && req.body.longitude != null) {
+            console.log("reply of GET_LOCATION was received. latitude:" + req.body.latitude + " longitude: " + req.body.longitude + ".");
 
-            // function for setting sender IDs
-            function set_senderIDs(setIDs) {
-                // get sender ID
-                if (event.source.type == "user") {
-                    console.log("user " + event.source.userId);
-                    // if userID is not included in setIDs, userID is added.
-                    if (!setIDs.includes(event.source.userId)) {
-                        setIDs.push(event.source.userId + "");
-                    }
+            // push api message
+            getlocIDs.forEach((senderID) => {
+                client.pushMessage(senderID, {
+                    type: "location",
+                    title: "パパの現在地",
+                    address: "パパの現在地",
+                    latitude: req.body.latitude,
+                    longitude: req.body.longitude,
+                });
 
-                } else if (event.source.type == "group") {
-                    console.log("group " + event.source.groupId + " " + event.source.userId);
-                    // if groupId is not included in setIDs, groupId is added.
-                    if (!setIDs.includes(event.source.groupId)) {
-                        setIDs.push(event.source.groupId + "");
-                    }
-                } else if (event.source.type == "room") {
-                    console.log("room " + event.source.roomId + " " + event.source.userId);
-                    // if roomId is not included in setIDs, roomId is added.
-                    if (!setIDs.includes(event.source.roomId)) {
-                        setIDs.push(event.source.roomId + "");
-                    }
-                }
-            }
-
-            if (event.postback.data == "action=getpic") {
-                set_senderIDs(getpicIDs)
-                // send GET_LIVINGPIC message to socket.io clients
-                console.log("GET_LIVINGPIC was fired.");
-
-                // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
-                io.sockets.emit("GET_LIVINGPIC");
-            }
-            else if (event.postback.data == "action=getloc") {
-                set_senderIDs(getlocIDs)
-                console.log("GET_LOCATION was fired.");
-
-                // send firebase notification to clients(target is father's smartphone.)
-                sendNotification();
-            }
-
+                // send message to owner 
+                sendOwner(senderID, "パパの現在地");
+            });
+            // delete all elements of getpicIDs
+            getlocIDs.splice(0);
         }
         else {
-            // receive only text message or postback
-            return Promise.resolve(null);
+            console.log("json data was not set...");
+        }
+
+        res.status(200).end()
+    });
+
+    /*
+     * function is called when line message is received from LINE.
+     */
+    app.post("/callback", line.middleware(config), (req, res) => {
+        console.log(req.body.events);
+        Promise.all(req.body.events.map(handleEvent)).then((result) =>
+            res.json(result)
+        );
+    });
+
+    /**
+     * handler called when line message is received.
+     */
+    function handleEvent(event) {
+
+        // If websocket's connection is none, return error message
+        if (io.engine.clientsCount == 0) {
+            return client.replyMessage(event.replyToken, {
+                type: "text",
+                text: "Websocketが接続されていません。",
+            });
+        } else {
+            // type is message
+            if (event.type == "message") {
+                // return button template
+                return client.replyMessage(event.replyToken, {
+                    type: "template",
+                    altText: "This is a buttons template",
+                    template: {
+                        type: "buttons",
+                        title: "お願いしたいこと",
+                        text: "アクションを選択してください。",
+                        actions: [
+                            {
+                                "type": "postback",
+                                "label": "リビングの現在画像",
+                                "data": "action=getpic"
+                            },
+                            {
+                                "type": "postback",
+                                "label": "パパの現在地",
+                                "data": "action=getloc"
+                            },
+                            {
+                                "type": "postback",
+                                "label": "TVの禁止設定",
+                                "data": "action=banTV"
+                            },]
+                    }
+                });
+            }
+            // type is postback
+            else if (event.type == "postback") {
+
+                // function for setting sender IDs
+                function set_senderIDs(setIDs) {
+                    // get sender ID
+                    if (event.source.type == "user") {
+                        console.log("user " + event.source.userId);
+                        // if userID is not included in setIDs, userID is added.
+                        if (!setIDs.includes(event.source.userId)) {
+                            setIDs.push(event.source.userId + "");
+                        }
+
+                    } else if (event.source.type == "group") {
+                        console.log("group " + event.source.groupId + " " + event.source.userId);
+                        // if groupId is not included in setIDs, groupId is added.
+                        if (!setIDs.includes(event.source.groupId)) {
+                            setIDs.push(event.source.groupId + "");
+                        }
+                    } else if (event.source.type == "room") {
+                        console.log("room " + event.source.roomId + " " + event.source.userId);
+                        // if roomId is not included in setIDs, roomId is added.
+                        if (!setIDs.includes(event.source.roomId)) {
+                            setIDs.push(event.source.roomId + "");
+                        }
+                    }
+                }
+
+                // selected GET LIVING PICTURE
+                if (event.postback.data == "action=getpic") {
+                    set_senderIDs(getpicIDs)
+                    // send GET_LIVINGPIC message to socket.io clients
+                    console.log("GET_LIVINGPIC was fired.");
+
+                    // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
+                    io.sockets.emit("GET_LIVINGPIC");
+                }
+                // selected GET LOCATION
+                else if (event.postback.data == "action=getloc") {
+                    set_senderIDs(getlocIDs)
+                    console.log("GET_LOCATION was fired.");
+
+                    // send firebase notification to clients(target is father's smartphone.)
+                    sendNotification();
+                }
+                // selected BAN TV
+                else if (event.postback.data == "action=banTV") {
+                    console.log("BAN_TV was fired.");
+
+                    // send GET_TV_STATUS message to socket.io clients(target is raspberry pi.)
+                    io.sockets.emit("GET_TV_STATUS");
+                }
+            }
+            else {
+                // receive only text message or postback
+                return Promise.resolve(null);
+            }
         }
     }
-}
 
-// heroku assign process.env.PORT dynamiclly.
-server.listen(PORT);
-console.log(`Server running at ${PORT}`);
+    // heroku assign process.env.PORT dynamiclly.
+    server.listen(PORT);
+    console.log(`Server running at ${PORT}`);
