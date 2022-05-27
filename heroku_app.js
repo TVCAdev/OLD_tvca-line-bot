@@ -188,11 +188,8 @@ io.sockets.on("connection", (socket) => {
     socket.on("GET_TV_STATUS", (data) => {
         console.log("reply of GET_TV_STATUS was received")
 
-        console.log("data is:")
-        console.log(data)
-
         let text_string = "現在のステータス";
-        let actions = [data.length];
+        let actions = Array[data.length];
 
         // make TVs status information
         data.forEach((TV, index) => {
