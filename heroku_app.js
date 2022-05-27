@@ -195,6 +195,7 @@ io.sockets.on("connection", (socket) => {
         data.forEach((TV, index) => {
             text_string += "\n" + data[index].name + ": " + data[index].status;
 
+            actions[index] = new Object();
             actions[index].type = "postback";
             actions[index].label = actions[index].name + "のTV禁止を" + "に変更しますか？";
             actions[index].data = "action=gettvsts";
