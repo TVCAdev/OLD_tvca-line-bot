@@ -187,6 +187,37 @@ io.sockets.on("connection", (socket) => {
 
     socket.on("GET_TV_STATUS", (data) => {
         console.log("reply of GET_TV_STATUS was received")
+
+        let text_string = "現在のステータス";
+        let actions = [data.length];
+
+        // make TVs status information
+        data.forEach((TV, index) => {
+            text_string += "\n" + actions[index].name + ": " + actions[index].status;
+
+            actions[index].type = "postback";
+            actions[index].label = actions[index].name + "のTV禁止を" + "に変更しますか？";
+            actions[index].data = "action=gettvsts";
+        });
+
+        // push api message
+        getTVStsIDs.forEach((senderID) => {
+            client.pushMessage(senderID, {
+                type: "template",
+                altText: "This is a buttons template",
+                template: {
+                    type: "buttons",
+                    title: "TV禁止",
+                    text: text_string,
+                    actions: actions
+                }
+            });
+
+            // send message to owner 
+            sendOwner(getTVStsIDs, "TVステータス");
+        });
+        // delete all elements of getpicIDs
+        getTVStsIDs.splice(0);
     });
 });
 
@@ -359,6 +390,7 @@ function handleEvent(event) {
             }
             // selected BAN TV
             else if (event.postback.data == "action=banTV") {
+                set_senderIDs(getTVStsIDs)
                 console.log("BAN_TV was fired.");
 
                 // send GET_TV_STATUS message to socket.io clients(target is raspberry pi.)
