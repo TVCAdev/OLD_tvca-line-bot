@@ -197,7 +197,7 @@ io.sockets.on("connection", (socket) => {
 
             actions[index] = new Object();
             actions[index].type = "postback";
-            actions[index].label = actions[index].name + "のTV禁止を" + "に変更しますか？";
+            actions[index].label = actions[index].name + "を禁止にする。";
             actions[index].data = "action=gettvsts";
         });
 
