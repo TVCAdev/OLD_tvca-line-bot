@@ -461,8 +461,9 @@ function handleEvent(event) {
             else if (event.postback.data.startsWith("action=banTVs")) {
                 console.log("set TVbans was fired.");
 
-                changeTo = event.postback.data.substr(23, 1)
-                cec_name = event.postback.data.substr(30)
+                // get changeTo and cec_name from postback data
+                let changeTo = event.postback.data.substr(23, 1)
+                let cec_name = event.postback.data.substr(30)
 
                 // update setting of TV bans.
                 const TVbansRef = db.collection('config').doc('TVbans');
