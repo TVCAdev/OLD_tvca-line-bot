@@ -191,34 +191,94 @@ io.sockets.on("connection", (socket) => {
         let text_string = "現在のステータス";
         let actions = Array(data.length);
 
-        // make TVs status information
-        data.forEach((TV, index) => {
-            text_string += "\n" + data[index].name + ": " + data[index].status;
+        // read setting of TV bans.
+        const locRef = db.collection('config').doc('TVbans');
 
-            actions[index] = new Object();
-            actions[index].type = "postback";
-            actions[index].label = actions[index].name + "を禁止にする。";
-            actions[index].data = "action=gettvsts";
-        });
+        locRef.get()
+            .then(doc => {
+                if (!doc.exists) {
+                    console.log('document TVbans was not exist.');
+                } else {
+                    const dbdata = doc.data()
+                    console.log('Document data:', dbdata);
 
-        // push api message
-        getTVStsIDs.forEach((senderID) => {
-            client.pushMessage(senderID, {
-                type: "template",
-                altText: "This is a buttons template",
-                template: {
-                    type: "buttons",
-                    title: "TV禁止",
-                    text: text_string,
-                    actions: actions
+                    // make TVs status information
+                    data.forEach((TV, index) => {
+                        actions[index] = new Object();
+                        actions[index].type = "postback";
+
+                        // get registration information for TVbans
+                        if (data[index].name in dbdata) {
+                            if (dbdata[data[index].name] == 0) {
+                                text_string += "\n" + data[index].name + "は許可状態: " + data[index].status;
+                                actions[index].label = data[index].name + "を禁止状態にする。";
+                                actions[index].data = "action=banTVs&changeTo=1&name=" + data[index].name;
+                            }
+                            else if (dbdata[data[index].name] == 1) {
+                                text_string += "\n" + data[index].name + "は禁止状態: " + data[index].status;
+                                actions[index].label = data[index].name + "を許可状態にする。";
+                                actions[index].data = "action=banTVs&changeTo=0&name=" + data[index].name;
+                            }
+                            else {
+                                console.log(data[index].name + ' registration was abnormal.');
+                                return;
+                            }
+                        }
+                        else {
+                            console.log(data[index].name + ' was not registerd in TVbans doc.');
+                            return;
+                        }
+                    });
+
+                    // push api message
+                    getTVStsIDs.forEach((senderID) => {
+                        client.pushMessage(senderID, {
+                            type: "template",
+                            altText: "This is a buttons template",
+                            template: {
+                                type: "buttons",
+                                title: "TV禁止",
+                                text: text_string,
+                                actions: actions
+                            }
+                        });
+
+                        // send message to owner 
+                        sendOwner(getTVStsIDs, "TVステータス");
+                    });
+                    // delete all elements of getpicIDs
+                    getTVStsIDs.splice(0);
                 }
+            })
+            .catch((error) => {
+                console.log('getting document TVbans was error.:', error);
             });
+    });
 
-            // send message to owner 
-            sendOwner(getTVStsIDs, "TVステータス");
-        });
-        // delete all elements of getpicIDs
-        getTVStsIDs.splice(0);
+    socket.on("GET_TVBAN", param => {
+        console.log("GET_TVBAN was received")
+
+        // read setting of TV bans.
+        const locRef = db.collection('config').doc('TVbans');
+
+        locRef.get()
+            .then(doc => {
+                if (!doc.exists) {
+                    console.log('document TVbans was not exist.');
+                } else {
+                    const dbdata = doc.data()
+                    console.log('Document data:', dbdata);
+
+                    // get registration information for TVbans
+                    if (param.name in dbdata) {
+                        // send GET_TVBAN message to TVCA router.
+                        io.sockets.emit("GET_TVBAN", { 'name': param.name, 'ban': dbdata[param.name] });
+                    }
+                }
+            })
+            .catch((error) => {
+                console.log('getting document TVbans was error.:', error);
+            });
     });
 });
 
@@ -339,7 +399,7 @@ function handleEvent(event) {
                         {
                             "type": "postback",
                             "label": "TVの禁止設定",
-                            "data": "action=banTV"
+                            "data": "action=TVStatus"
                         },]
                 }
             });
@@ -390,12 +450,23 @@ function handleEvent(event) {
                 sendNotification();
             }
             // selected BAN TV
-            else if (event.postback.data == "action=banTV") {
+            else if (event.postback.data == "action=TVStatus") {
                 set_senderIDs(getTVStsIDs)
                 console.log("BAN_TV was fired.");
 
                 // send GET_TV_STATUS message to socket.io clients(target is raspberry pi.)
                 io.sockets.emit("GET_TV_STATUS");
+            }
+            // selected set TVban
+            else if (event.postback.data.startsWith("action=banTVs")) {
+                console.log("set TVbans was fired.");
+
+                // set param
+                let param = Array(2);
+                param.changeTo = event.postback.data.substr(23, 1)
+                param.name = event.postback.data.substr(30)
+                // send SET_TVBAN message with name to socket.io clients(target is raspberry pi.)
+                io.sockets.emit("SET_TVBAN", param);
             }
         }
         else {
