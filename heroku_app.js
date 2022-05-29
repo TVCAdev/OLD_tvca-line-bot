@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3000;
  */
 
 const check_url_token = function (req, res, next) {
-    if ((req.query.url_token !== 'undefined') && (req.query.url_token == process.env.URL_TOKEN)) {
+    if ((req.query.url_token !== undefined) && (req.query.url_token == process.env.URL_TOKEN)) {
         next()
     }
     else {
@@ -83,7 +83,7 @@ const db = getFirestore();
  */
 function sendOwner(senderID, target) {
     // If process.env.OWNERID is defined, send messages.
-    if (typeof process.env.OWNERID !== 'undefined' && process.env.OWNERID != senderID) {
+    if (typeof process.env.OWNERID !== undefined && process.env.OWNERID != senderID) {
         let dName = ""
         // get user profile
         if (senderID != null) {
@@ -209,12 +209,12 @@ io.sockets.on("connection", (socket) => {
 
                         // get registration information for TVbans
                         if (data[index].name in dbdata) {
-                            if (dbdata[data[index].name] == 0) {
+                            if (dbdata[data[index].name] == "0") {
                                 text_string += "\n" + data[index].name + "は許可状態: " + data[index].status;
                                 actions[index].label = data[index].name + "を禁止状態にする。";
                                 actions[index].data = "action=banTVs&changeTo=1&name=" + data[index].name;
                             }
-                            else if (dbdata[data[index].name] == 1) {
+                            else if (dbdata[data[index].name] == "1") {
                                 text_string += "\n" + data[index].name + "は禁止状態: " + data[index].status;
                                 actions[index].label = data[index].name + "を許可状態にする。";
                                 actions[index].data = "action=banTVs&changeTo=0&name=" + data[index].name;
@@ -468,7 +468,7 @@ function handleEvent(event) {
                 // update setting of TV bans.
                 const TVbansRef = db.collection('config').doc('TVbans');
 
-                TVbansRef.update({ cec_name: int(changeTo) })
+                TVbansRef.update({ cec_name: changeTo })
                     .then(doc => {
                         console.log('updating ' + cec_name + ' to ' + changeTo + ' was succeed.');
 
