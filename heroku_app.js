@@ -462,13 +462,15 @@ function handleEvent(event) {
                 console.log("set TVbans was fired.");
 
                 // get changeTo and cec_name from postback data
-                let changeTo = event.postback.data.substr(23, 1)
-                let cec_name = event.postback.data.substr(30)
+                let changeTo = event.postback.data.substr(23, 1);
+                let cec_name = event.postback.data.substr(30);
 
                 // update setting of TV bans.
                 const TVbansRef = db.collection('config').doc('TVbans');
 
-                TVbansRef.update({ cec_name: changeTo })
+                let set_obj = {};
+                set_obj[cec_name] = changeTo;
+                TVbansRef.update(set_obj)
                     .then(doc => {
                         console.log('updating ' + cec_name + ' to ' + changeTo + ' was succeed.');
 
