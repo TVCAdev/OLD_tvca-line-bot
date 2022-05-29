@@ -461,12 +461,22 @@ function handleEvent(event) {
             else if (event.postback.data.startsWith("action=banTVs")) {
                 console.log("set TVbans was fired.");
 
-                // set param
-                let param = Array(2);
-                param.changeTo = event.postback.data.substr(23, 1)
-                param.name = event.postback.data.substr(30)
-                // send SET_TVBAN message with name to socket.io clients(target is raspberry pi.)
-                io.sockets.emit("SET_TVBAN", param);
+                changeTo = event.postback.data.substr(23, 1)
+                cec_name = event.postback.data.substr(30)
+
+                // update setting of TV bans.
+                const TVbansRef = db.collection('config').doc('TVbans');
+
+                TVbansRef.update({ cec_name: int(changeTo) })
+                    .then(doc => {
+                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was succeed.');
+
+                        // send UPDATE_TVBAN message with name to socket.io clients(target is raspberry pi.)
+                        io.sockets.emit("UPDATE_TVBAN", { 'name': cec_name });
+                    })
+                    .catch((error) => {
+                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was failed.', error);
+                    });
             }
         }
         else {
