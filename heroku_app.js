@@ -541,7 +541,7 @@ function handleEvent(event) {
                     .then(querySnapshot => {
                         querySnapshot.forEach(queryDocumentSnapshot => {
                             let data = queryDocumentSnapshot.data();
-                            logtext = logtext + ' ' + data.date + ': ' + data.status + 'になりました。\n'
+                            logtext = logtext + ' ' + data.date.toDate() + ': ' + data.status + 'になりました。\n'
                         });
 
                         // send log data
