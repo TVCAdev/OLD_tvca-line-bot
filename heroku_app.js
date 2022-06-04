@@ -541,7 +541,16 @@ function handleEvent(event) {
                     .then(querySnapshot => {
                         querySnapshot.forEach(queryDocumentSnapshot => {
                             let data = queryDocumentSnapshot.data();
-                            logtext = logtext + ' ' + data.date.toDate() + ': ' + data.status + 'になりました。\n'
+                            let date = data.date.toDate();
+                            let year = date.getFullYear();
+                            let month = ("0" + (date.getMonth() + 1)).slice(-2);
+                            let day = ("0" + date.getDate()).slice(-2);
+                            let hour = ("0" + date.getHours()).slice(-2);
+                            let min = ("0" + date.getMinutes()).slice(-2);
+                            let sec = ("0" + date.getSeconds()).slice(-2);
+
+                            let showDate = `${year}/${month}/${day} ${hour}:${min}:${sec}`
+                            logtext = logtext + ' ' + showDate + '-> ' + data.status + 'になりました。\n'
                         });
 
                         // send log data
