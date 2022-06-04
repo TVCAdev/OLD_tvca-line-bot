@@ -539,8 +539,9 @@ function handleEvent(event) {
                     .orderBy('date', 'desc').limit(20)
                     .get()
                     .then(querySnapshot => {
-                        querySnapshot.forEach(doc => {
-                            logtext = logtext + ' ' + doc.date + ': ' + doc.status + 'になりました。\n'
+                        querySnapshot.forEach(queryDocumentSnapshot => {
+                            let data = queryDocumentSnapshot.data();
+                            logtext = logtext + ' ' + data.date + ': ' + data.status + 'になりました。\n'
                         });
 
                         // send log data
