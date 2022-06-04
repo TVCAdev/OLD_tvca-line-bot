@@ -537,7 +537,7 @@ function handleEvent(event) {
                     .where('name', '=', cec_name)
                     .orderBy('date', 'desc').limit(20).get();
 
-                let logtext = doc.name + 'のログ一覧(最新20件)\n';
+                let logtext = cec_name + 'のログ一覧(最新20件)\n';
                 querySnapshot.docs.forEach((doc, index) => {
                     logtext = logtext + ' ' + doc.date + ': ' + doc.status + 'になりました。\n'
                 })
