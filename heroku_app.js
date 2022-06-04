@@ -100,6 +100,17 @@ function sendOwner(senderID, target) {
     }
 }
 
+function sendOwnerText(text) {
+    // If process.env.OWNERID is defined, send messages.
+    if (typeof process.env.OWNERID !== undefined) {
+        // send message to notify
+        client.pushMessage(process.env.OWNERID, {
+            type: "text",
+            text: text
+        });
+    }
+}
+
 /*
  send notification message for getting location.
  */
@@ -189,7 +200,8 @@ io.sockets.on("connection", (socket) => {
         console.log("reply of GET_TV_STATUS was received")
 
         let text_string = "現在のステータス";
-        let actions = Array(data.length);
+        let data_size = data.length;
+        let actions = Array(data_size * 2);
 
         // read setting of TV bans.
         const locRef = db.collection('config').doc('TVbans');
@@ -228,6 +240,12 @@ io.sockets.on("connection", (socket) => {
                             console.log(data[index].name + ' was not registerd in TVbans doc.');
                             return;
                         }
+
+                        // add log view postback
+                        actions[data_size + index] = new Object();
+                        actions[data_size + index].type = "postback";
+                        actions[data_size + index].label = data[index].name + "のログを表示する。";
+                        actions[data_size + index].data = "action=showBanTVLogs&name=" + data[index].name;
                     });
 
                     // push api message
@@ -259,9 +277,9 @@ io.sockets.on("connection", (socket) => {
         console.log("GET_TVBAN was received")
 
         // read setting of TV bans.
-        const locRef = db.collection('config').doc('TVbans');
+        const TVbansRef = db.collection('config').doc('TVbans');
 
-        locRef.get()
+        TVbansRef.get()
             .then(doc => {
                 if (!doc.exists) {
                     console.log('document TVbans was not exist.');
@@ -280,6 +298,29 @@ io.sockets.on("connection", (socket) => {
                 console.log('getting document TVbans was error.:', error);
             });
     });
+
+
+    socket.on("LOG_TV_STATUS", param => {
+        console.log("LOG_TV_STATUS was received")
+
+        const LogsRef = db.collection('log').doc('TVStatus').collection('Logs');
+
+        LogsRef.add({
+            name: param.name,
+            status: param.status,
+            date: firebaseadmin.firestore.FieldValue.serverTimestamp()
+        })
+            .catch((error) => {
+                console.log('adding log was error.:', error);
+            });
+    });
+
+    socket.on("NOTIFY_TV_OFFLINE", param => {
+        console.log("NOTIFY_TV_OFFLINE was received")
+
+        // send offline message to 
+        sendOwnerText(param.name + ' status was change to offline.');
+    });
 });
 
 /*
@@ -288,6 +329,9 @@ io.sockets.on("connection", (socket) => {
  */
 io.sockets.on("disconnection", (socket) => {
     console.log("disconnected");
+
+    // send offline message to 
+    sendOwnerText('TVCARouter was disconnected.');
 });
 
 /*
@@ -480,6 +524,29 @@ function handleEvent(event) {
                     .catch((error) => {
                         console.log('updating ' + cec_name + ' to ' + changeTo + ' was failed.', error);
                     });
+            }
+            // selected show TVban Logs
+            else if (event.postback.data.startsWith("action=showBanTVLogs")) {
+                console.log("show TVban Logs was fired.");
+
+                // get changeTo and cec_name from postback data
+                let cec_name = event.postback.data.substr(26);
+
+                // view logs of target cec_name
+                const querySnapshot = db.collection('log').doc('TVStatus').collection('Logs')
+                    .where('name', '=', cec_name)
+                    .orderBy('date', 'desc').limit(20).get();
+
+                let logtext = doc.name + 'のログ一覧(最新20件)\n';
+                querySnapshot.docs.forEach((doc, index) => {
+                    logtext = logtext + ' ' + doc.date + ': ' + doc.status + 'になりました。\n'
+                })
+
+                // send log data
+                client.replyMessage(event.replyToken, {
+                    type: "text",
+                    text: logtext,
+                });
             }
         }
         else {
