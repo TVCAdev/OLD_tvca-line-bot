@@ -531,22 +531,25 @@ function handleEvent(event) {
 
                 // get changeTo and cec_name from postback data
                 let cec_name = event.postback.data.substr(26);
+                let logtext = cec_name + 'のログ一覧(最新20件)\n';
 
                 // view logs of target cec_name
-                const querySnapshot = db.collection('log').doc('TVStatus').collection('Logs')
+                db.collection('log').doc('TVStatus').collection('Logs')
                     .where('name', '=', cec_name)
-                    .orderBy('date', 'desc').limit(20).get();
+                    .orderBy('date', 'desc').limit(20)
+                    .get()
+                    .then(querySnapshot => {
+                        querySnapshot.forEach(doc => {
+                            logtext = logtext + ' ' + doc.date + ': ' + doc.status + 'になりました。\n'
+                        });
 
-                let logtext = cec_name + 'のログ一覧(最新20件)\n';
-                querySnapshot.docs.forEach((doc, index) => {
-                    logtext = logtext + ' ' + doc.date + ': ' + doc.status + 'になりました。\n'
-                })
+                        // send log data
+                        client.replyMessage(event.replyToken, {
+                            type: "text",
+                            text: logtext,
+                        });
+                    });
 
-                // send log data
-                client.replyMessage(event.replyToken, {
-                    type: "text",
-                    text: logtext,
-                });
             }
         }
         else {
