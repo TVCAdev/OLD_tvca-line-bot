@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3000;
  */
 
 const check_url_token = function (req, res, next) {
-    if ((req.query.url_token !== 'undefined') && (req.query.url_token == process.env.URL_TOKEN)) {
+    if ((req.query.url_token !== undefined) && (req.query.url_token == process.env.URL_TOKEN)) {
         next()
     }
     else {
@@ -58,6 +58,7 @@ const client = new line.Client(config);
  */
 let getpicIDs = [];
 let getlocIDs = [];
+let getTVStsIDs = [];
 
 /*
  * Original Data of Image
@@ -82,7 +83,7 @@ const db = getFirestore();
  */
 function sendOwner(senderID, target) {
     // If process.env.OWNERID is defined, send messages.
-    if (typeof process.env.OWNERID !== 'undefined' && process.env.OWNERID != senderID) {
+    if (typeof process.env.OWNERID !== undefined && process.env.OWNERID != senderID) {
         let dName = ""
         // get user profile
         if (senderID != null) {
@@ -95,6 +96,17 @@ function sendOwner(senderID, target) {
         client.pushMessage(process.env.OWNERID, {
             type: "text",
             text: target + "が" + dName + "(" + senderID + ")によって取得されました。",
+        });
+    }
+}
+
+function sendOwnerText(text) {
+    // If process.env.OWNERID is defined, send messages.
+    if (typeof process.env.OWNERID !== undefined) {
+        // send message to notify
+        client.pushMessage(process.env.OWNERID, {
+            type: "text",
+            text: text
         });
     }
 }
@@ -183,6 +195,132 @@ io.sockets.on("connection", (socket) => {
         // delete all elements of getpicIDs
         getpicIDs.splice(0);
     });
+
+    socket.on("GET_TV_STATUS", (data) => {
+        console.log("reply of GET_TV_STATUS was received")
+
+        let text_string = "現在のステータス";
+        let data_size = data.length;
+        let actions = Array(data_size * 2);
+
+        // read setting of TV bans.
+        const locRef = db.collection('config').doc('TVbans');
+
+        locRef.get()
+            .then(doc => {
+                if (!doc.exists) {
+                    console.log('document TVbans was not exist.');
+                } else {
+                    const dbdata = doc.data()
+                    console.log('Document data:', dbdata);
+
+                    // make TVs status information
+                    data.forEach((TV, index) => {
+                        actions[index] = new Object();
+                        actions[index].type = "postback";
+
+                        // get registration information for TVbans
+                        if (data[index].name in dbdata) {
+                            if (dbdata[data[index].name] == "0") {
+                                text_string += "\n" + data[index].name + "は許可状態: " + data[index].status;
+                                actions[index].label = data[index].name + "を禁止状態にする。";
+                                actions[index].data = "action=banTVs&changeTo=1&name=" + data[index].name;
+                            }
+                            else if (dbdata[data[index].name] == "1") {
+                                text_string += "\n" + data[index].name + "は禁止状態: " + data[index].status;
+                                actions[index].label = data[index].name + "を許可状態にする。";
+                                actions[index].data = "action=banTVs&changeTo=0&name=" + data[index].name;
+                            }
+                            else {
+                                console.log(data[index].name + ' registration was abnormal.');
+                                return;
+                            }
+                        }
+                        else {
+                            console.log(data[index].name + ' was not registerd in TVbans doc.');
+                            return;
+                        }
+
+                        // add log view postback
+                        actions[data_size + index] = new Object();
+                        actions[data_size + index].type = "postback";
+                        actions[data_size + index].label = data[index].name + "のログを表示する。";
+                        actions[data_size + index].data = "action=showBanTVLogs&name=" + data[index].name;
+                    });
+
+                    // push api message
+                    getTVStsIDs.forEach((senderID) => {
+                        client.pushMessage(senderID, {
+                            type: "template",
+                            altText: "This is a buttons template",
+                            template: {
+                                type: "buttons",
+                                title: "TV禁止",
+                                text: text_string,
+                                actions: actions
+                            }
+                        });
+
+                        // send message to owner 
+                        sendOwner(getTVStsIDs, "TVステータス");
+                    });
+                    // delete all elements of getpicIDs
+                    getTVStsIDs.splice(0);
+                }
+            })
+            .catch((error) => {
+                console.log('getting document TVbans was error.:', error);
+            });
+    });
+
+    socket.on("GET_TVBAN", param => {
+        console.log("GET_TVBAN was received")
+
+        // read setting of TV bans.
+        const TVbansRef = db.collection('config').doc('TVbans');
+
+        TVbansRef.get()
+            .then(doc => {
+                if (!doc.exists) {
+                    console.log('document TVbans was not exist.');
+                } else {
+                    const dbdata = doc.data()
+                    console.log('Document data:', dbdata);
+
+                    // get registration information for TVbans
+                    if (param.name in dbdata) {
+                        // send GET_TVBAN message to TVCA router.
+                        io.sockets.emit("GET_TVBAN", { 'name': param.name, 'ban': dbdata[param.name] });
+                    }
+                }
+            })
+            .catch((error) => {
+                console.log('getting document TVbans was error.:', error);
+            });
+    });
+
+
+    socket.on("LOG_TV_STATUS", param => {
+        console.log("LOG_TV_STATUS was received")
+
+        const LogsRef = db.collection('log').doc('TVStatus').collection('Logs');
+
+        LogsRef.add({
+            name: param.name,
+            status: param.status,
+            date: firebaseadmin.firestore.FieldValue.serverTimestamp()
+        })
+            .catch((error) => {
+                console.log('adding log was error.:', error);
+            });
+    });
+
+    socket.on("NOTIFY_TV_OFFLINE", param => {
+        console.log("NOTIFY_TV_OFFLINE was received")
+
+        // send offline message to 
+        sendOwnerText(param.name + ' status was change to offline.');
+    });
 });
 
 /*
@@ -191,6 +329,9 @@ io.sockets.on("connection", (socket) => {
  */
 io.sockets.on("disconnection", (socket) => {
     console.log("disconnected");
+
+    // send offline message to 
+    sendOwnerText('TVCARouter was disconnected.');
 });
 
 /*
@@ -298,6 +439,11 @@ function handleEvent(event) {
                             "type": "postback",
                             "label": "パパの現在地",
                             "data": "action=getloc"
+                        },
+                        {
+                            "type": "postback",
+                            "label": "TVの禁止設定",
+                            "data": "action=TVStatus"
                         },]
                 }
             });
@@ -330,6 +476,7 @@ function handleEvent(event) {
                 }
             }
 
+            // selected GET LIVING PICTURE
             if (event.postback.data == "action=getpic") {
                 set_senderIDs(getpicIDs)
                 // send GET_LIVINGPIC message to socket.io clients
@@ -338,6 +485,7 @@ function handleEvent(event) {
                 // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
                 io.sockets.emit("GET_LIVINGPIC");
             }
+            // selected GET LOCATION
             else if (event.postback.data == "action=getloc") {
                 set_senderIDs(getlocIDs)
                 console.log("GET_LOCATION was fired.");
@@ -345,7 +493,74 @@ function handleEvent(event) {
                 // send firebase notification to clients(target is father's smartphone.)
                 sendNotification();
             }
+            // selected BAN TV
+            else if (event.postback.data == "action=TVStatus") {
+                set_senderIDs(getTVStsIDs)
+                console.log("BAN_TV was fired.");
 
+                // send GET_TV_STATUS message to socket.io clients(target is raspberry pi.)
+                io.sockets.emit("GET_TV_STATUS");
+            }
+            // selected set TVban
+            else if (event.postback.data.startsWith("action=banTVs")) {
+                console.log("set TVbans was fired.");
+
+                // get changeTo and cec_name from postback data
+                let changeTo = event.postback.data.substr(23, 1);
+                let cec_name = event.postback.data.substr(30);
+
+                // update setting of TV bans.
+                const TVbansRef = db.collection('config').doc('TVbans');
+
+                let set_obj = {};
+                set_obj[cec_name] = changeTo;
+                TVbansRef.update(set_obj)
+                    .then(doc => {
+                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was succeed.');
+
+                        // send UPDATE_TVBAN message with name to socket.io clients(target is raspberry pi.)
+                        io.sockets.emit("UPDATE_TVBAN", { 'name': cec_name });
+                    })
+                    .catch((error) => {
+                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was failed.', error);
+                    });
+            }
+            // selected show TVban Logs
+            else if (event.postback.data.startsWith("action=showBanTVLogs")) {
+                console.log("show TVban Logs was fired.");
+
+                // get changeTo and cec_name from postback data
+                let cec_name = event.postback.data.substr(26);
+                let logtext = cec_name + 'のログ一覧(最新20件)\n';
+
+                // view logs of target cec_name
+                db.collection('log').doc('TVStatus').collection('Logs')
+                    .where('name', '=', cec_name)
+                    .orderBy('date', 'desc').limit(20)
+                    .get()
+                    .then(querySnapshot => {
+                        querySnapshot.forEach(queryDocumentSnapshot => {
+                            let data = queryDocumentSnapshot.data();
+                            let date = data.date.toDate();
+                            let year = date.getFullYear();
+                            let month = ("0" + (date.getMonth() + 1)).slice(-2);
+                            let day = ("0" + date.getDate()).slice(-2);
+                            let hour = ("0" + date.getHours()).slice(-2);
+                            let min = ("0" + date.getMinutes()).slice(-2);
+                            let sec = ("0" + date.getSeconds()).slice(-2);
+
+                            let showDate = `${year}/${month}/${day} ${hour}:${min}:${sec}`
+                            logtext = logtext + ' ' + showDate + '-> ' + data.status + 'になりました。\n'
+                        });
+
+                        // send log data
+                        client.replyMessage(event.replyToken, {
+                            type: "text",
+                            text: logtext,
+                        });
+                    });
+
+            }
         }
         else {
             // receive only text message or postback
