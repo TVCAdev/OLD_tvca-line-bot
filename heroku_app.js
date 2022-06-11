@@ -522,7 +522,7 @@ function handleEvent(event) {
                         io.sockets.emit("UPDATE_TVBAN", { 'name': cec_name });
                     })
                     .catch((error) => {
-                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was failed.', error);
+                        console.log('updating ' + cec_name + ' to ' + changeTo + ' was failed.: %s', error);
                     });
             }
             // selected show TVban Logs
