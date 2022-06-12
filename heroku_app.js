@@ -499,14 +499,13 @@ function handleEvent(event) {
                     text: "TVCA Routerとの接続が切れているため、実行できません。",
                 });
             }
-            else {
-                set_senderIDs(getpicIDs)
-                // send GET_LIVINGPIC message to socket.io clients
-                console.log("GET_LIVINGPIC was fired.");
 
-                // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
-                io.sockets.emit("GET_LIVINGPIC");
-            }
+            set_senderIDs(getpicIDs)
+            // send GET_LIVINGPIC message to socket.io clients
+            console.log("GET_LIVINGPIC was fired.");
+
+            // send GET_LIVINGPIC message to socket.io clients(target is raspberry pi.)
+            io.sockets.emit("GET_LIVINGPIC");
         }
         // selected GET LOCATION
         else if (event.postback.data == "action=getloc") {
@@ -518,6 +517,14 @@ function handleEvent(event) {
         }
         // selected BAN TV
         else if (event.postback.data == "action=TVStatus") {
+            // if connection to TVCARouter was lost, reply error message.
+            if (clientConnections == 0) {
+                return client.replyMessage(event.replyToken, {
+                    type: "text",
+                    text: "TVCA Routerとの接続が切れているため、実行できません。",
+                });
+            }
+
             set_senderIDs(getTVStsIDs)
             console.log("BAN_TV was fired.");
 
