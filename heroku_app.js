@@ -54,6 +54,13 @@ const config = {
 const client = new line.Client(config);
 
 /*
+ * INTERVAL FOR CHECK CONNECTION
+ */
+const INTERVAL = process.env.CHECK_CONNECT_INTERVAL_SEC * 1000;
+
+let clientConnections = 0;
+
+/*
  * List of requested userID
  */
 let getpicIDs = [];
@@ -329,10 +336,24 @@ io.sockets.on("connection", (socket) => {
  */
 io.sockets.on("disconnection", (socket) => {
     console.log("disconnected");
-
-    // send offline message to 
-    sendOwnerText('TVCARouter was disconnected.');
 });
+
+/*
+ check whether TVCARouter is connected or not.
+ */
+function checkConnection() {
+    // checking number of websocket's connection was change to 0.
+    if ((clientConnections != io.engine.clientsCount) && (io.engine.clientsCount == 0)) {
+        // send offline message to owner.
+        sendOwnerText('TVCARouter was disconnected.');
+    }
+
+    // set connection counter.
+    clientConnections = io.engine.clientsCount;
+
+    // reset timer for checking TVCARouter connection
+    setTimeout(checkConnection, INTERVAL);
+};
 
 /*
  * function is called when image files requests.
@@ -568,6 +589,9 @@ function handleEvent(event) {
         }
     }
 }
+
+// start timer for checking TVCARouter connection
+setTimeout(checkConnection, INTERVAL);
 
 // heroku assign process.env.PORT dynamiclly.
 server.listen(PORT);
