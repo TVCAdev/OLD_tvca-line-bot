@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "@line/bot-sdk": "^7.4.0",
+    "ask-sdk": "^2.12.1",
+    "ask-sdk-express-adapter": "^2.12.1",
     "express": "^4.17.1",
     "firebase-admin": "^10.1.0",
     "socket.io": "^4.4.0"
