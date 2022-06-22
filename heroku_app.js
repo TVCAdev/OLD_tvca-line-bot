@@ -2,9 +2,15 @@
 
 const express = require("express");
 const line = require("@line/bot-sdk");
+const Alexa = require('ask-sdk');
+const { ExpressAdapter } = require('ask-sdk-express-adapter');
 
 const app = express();
 const server = require("http").Server(app);
+
+const skillBuilder = Alexa.SkillBuilders.custom();
+const skill = skillBuilder.create();
+const adapter = new ExpressAdapter(skill, true, true);
 
 const firebaseadmin = require('firebase-admin');
 const { initializeApp, cert } = require('firebase-admin/app');
@@ -369,6 +375,16 @@ app.get("/" + process.env.ORIGFILENAME + ".jpg", check_url_token, (req, res) => 
 app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => {
     // send living pic data
     res.send(origData)
+});
+
+/*
+ * function is called when alexa skill(checking presence in room) was called.
+ */
+app.post("/" + process.env.ALEXA_INROOM_URL, adapter.getRequestHandlers(), (req, res) => {
+    console.log("ALEXA_INROOM_URL called...");
+
+    console.log(req);
+
 });
 
 /*
