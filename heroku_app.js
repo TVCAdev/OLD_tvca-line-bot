@@ -85,6 +85,26 @@ const AlexaEnterLeaveIntentHandler = {
     handle(handlerInput) {
         console.log("AlexaEnterLeaveIntentHandler was called...");
 
+        const roomName = getSlotValue(handlerInput.requestEnvelope, 'room');
+        const actionName = getSlotValue(handlerInput.requestEnvelope, 'action');
+
+        // update setting of room status.
+        const inRoomRef = db.collection('state').doc('inroom');
+
+        let set_obj = {};
+        if (actionName == '入室') {
+            set_obj[roomName] = true;
+        } else {
+            set_obj[roomName] = false;
+        }
+        inRoomRef.update(set_obj)
+            .then(doc => {
+                console.log('updating ' + roomName + ' to ' + actionName + ' was succeed.');
+            })
+            .catch((error) => {
+                console.log('updating ' + roomName + ' to ' + actionName + ' was failed.: %s', error);
+            });
+
         return handlerInput.responseBuilder
             .getResponse();
     }
