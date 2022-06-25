@@ -402,7 +402,8 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => 
 /*
  * function is called when alexa skill(checking presence in room) was called.
  */
-app.post("/" + process.env.ALEXA_INROOM_URL, express_adapter.getRequestHandlers(), (req, res) => {
+// app.post("/" + process.env.ALEXA_INROOM_URL, express_adapter.getRequestHandlers(), (req, res) => {
+app.post("/" + process.env.ALEXA_INROOM_URL, (req, res) => {
     console.log("ALEXA_INROOM_URL called...");
 
     console.log(req);
