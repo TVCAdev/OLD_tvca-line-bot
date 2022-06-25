@@ -87,6 +87,7 @@ const AlexaEnterLeaveIntentHandler = {
 
         const roomName = getSlotValue(handlerInput.requestEnvelope, 'room');
         const actionName = getSlotValue(handlerInput.requestEnvelope, 'action');
+        console.log("room: " + roomName + " action: " + actionName);
 
         // update setting of room status.
         const inRoomRef = db.collection('state').doc('inroom');
