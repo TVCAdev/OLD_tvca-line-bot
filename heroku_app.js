@@ -8,10 +8,6 @@ const { ExpressAdapter } = require('ask-sdk-express-adapter');
 const app = express();
 const server = require("http").Server(app);
 
-const skillBuilder = Alexa.SkillBuilders.custom();
-const skill = skillBuilder.create();
-const adapter = new ExpressAdapter(skill, true, true);
-
 const firebaseadmin = require('firebase-admin');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -77,6 +73,32 @@ let getTVStsIDs = [];
  * Original Data of Image
  */
 let origData;
+
+/*
+ * Function for Alexa IntentRequest
+ */
+const AlexaEnterLeaveIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AlexaEnterLeaveIntent';
+    },
+    handle(handlerInput) {
+        console.log("AlexaEnterLeaveIntentHandler was called...");
+
+        return handlerInput.responseBuilder
+            .getResponse();
+    }
+};
+
+// set alexa handlers
+const skillBuilder = Alexa.SkillBuilders // get SkillBuilder
+    .custom() // get CustomSkillBuilder
+    .withSkillId(process.env.ALEXA_ENTERLEAVE_SKILL_ID) // whether my skill or not
+    .addRequestHandlers(
+        AlexaEnterLeaveIntentHandler
+    );
+const skill = skillBuilder.create();
+const express_adapter = new ExpressAdapter(skill, true, true);
 
 /*
  * Initialize Firebase
@@ -380,7 +402,7 @@ app.get("/" + process.env.PREVFILENAME + ".jpg", check_url_token, (req, res) => 
 /*
  * function is called when alexa skill(checking presence in room) was called.
  */
-app.post("/" + process.env.ALEXA_INROOM_URL, adapter.getRequestHandlers(), (req, res) => {
+app.post("/" + process.env.ALEXA_INROOM_URL, express_adapter.getRequestHandlers(), (req, res) => {
     console.log("ALEXA_INROOM_URL called...");
 
     console.log(req);
