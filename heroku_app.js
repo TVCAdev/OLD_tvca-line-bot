@@ -593,9 +593,6 @@ function handleEvent(event) {
         }
         // selected get InRoom
         else if (event.postback.data == "action=getInRoom") {
-            let text_string = "在室状況\n";
-            let actions = new Array();
-
             // read inroom status
             const inroomRef = db.collection('state').doc('inroom');
 
@@ -604,6 +601,9 @@ function handleEvent(event) {
                     if (!doc.exists) {
                         console.log('document inroom was not exist.');
                     } else {
+                        let text_string = "";
+                        let actions = new Array();
+
                         const dbdata = doc.data()
                         console.log('Document data:', dbdata);
 
@@ -614,16 +614,15 @@ function handleEvent(event) {
 
                             // get registration information for TVbans
                             if (dbdata[key] == false) {
-                                text_string += key + "：不在\n";
+                                text_string = text_string + key + "：不在\n";
                             }
                             else {
-                                text_string += key + "：在室\n";
+                                text_string = text_string + key + "：在室\n";
                             }
                             newData.label = key + "のログ表示";
                             newData.data = "action=showInroomLogs&room=" + key;
 
                             actions.push(newData);
-
                         });
 
                         // return button template
@@ -651,7 +650,7 @@ function handleEvent(event) {
             let roomName = event.postback.data.substr(27);
             let logtext = roomName + 'のログ一覧(最新20件)\n';
 
-            // view logs of target cec_name
+            // view logs of target room name
             db.collection('log').doc('Inroom').collection('Logs')
                 .where('name', '=', roomName)
                 .orderBy('date', 'desc').limit(20)
@@ -677,7 +676,6 @@ function handleEvent(event) {
                         text: logtext,
                     });
                 });
-
         }
         // selected BAN TV
         else if (event.postback.data == "action=TVStatus") {
