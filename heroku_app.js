@@ -608,7 +608,7 @@ function handleEvent(event) {
                                 text_string += key + "は在室状態です。\n";
                             }
                             newData.label = key + "のログを表示する。";
-                            newData.data = "action=showInroomLogs&name=" + key;
+                            newData.data = "action=showInroomLogs&room=" + key;
 
                             actions.push(newData);
 
@@ -620,7 +620,6 @@ function handleEvent(event) {
                             altText: "在室状況",
                             template: {
                                 type: "buttons",
-                                title: "在室状況",
                                 text: text_string,
                                 actions: actions
                             }
