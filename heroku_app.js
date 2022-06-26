@@ -515,6 +515,11 @@ function handleEvent(event) {
                     },
                     {
                         "type": "postback",
+                        "label": "在室状況",
+                        "data": "action=getInRoom"
+                    },
+                    {
+                        "type": "postback",
                         "label": "TVの禁止設定",
                         "data": "action=TVStatus"
                     },]
@@ -573,6 +578,58 @@ function handleEvent(event) {
 
             // send firebase notification to clients(target is father's smartphone.)
             sendNotification();
+        }
+        // selected get InRoom
+        else if (event.postback.data == "action=getInRoom") {
+            let text_string = "在室状況\n";
+            let actions = new Array();
+
+            // read inroom status
+            const inroomRef = db.collection('state').doc('inroom');
+
+            inroomRef.get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        console.log('document inroom was not exist.');
+                    } else {
+                        const dbdata = doc.data()
+                        console.log('Document data:', dbdata);
+
+                        // make Inroom status information
+                        Object.keys(dbdata).forEach(key => {
+                            let newData = new Object();
+                            newData.type = "postback";
+
+                            // get registration information for TVbans
+                            if (dbdata[key] == false) {
+                                text_string += key + "は不在状態です。\n";
+                            }
+                            else {
+                                text_string += key + "は在室状態です。\n";
+                            }
+                            newData.label = key + "のログを表示する。";
+                            newData.data = "action=showInroomLogs&name=" + key;
+
+                            actions.push(newData);
+
+                        });
+
+                        // return button template
+                        return client.replyMessage(event.replyToken, {
+                            type: "template",
+                            altText: "在室状況",
+                            template: {
+                                type: "buttons",
+                                title: "在室状況",
+                                text: text_string,
+                                actions: actions
+                            }
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.log('getting Inroom status was error.:', error);
+                });
         }
         // selected BAN TV
         else if (event.postback.data == "action=TVStatus") {
