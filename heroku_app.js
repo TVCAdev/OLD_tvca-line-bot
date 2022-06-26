@@ -89,7 +89,7 @@ const AlexaEnterLeaveIntentHandler = {
         const actionName = Alexa.getSlotValue(handlerInput.requestEnvelope, 'action');
         console.log("room: " + roomName + " action: " + actionName);
 
-        // update setting of room status.
+        // update room status.
         const inRoomRef = db.collection('state').doc('inroom');
 
         let set_obj = {};
@@ -104,6 +104,18 @@ const AlexaEnterLeaveIntentHandler = {
             })
             .catch((error) => {
                 console.log('updating ' + roomName + ' to ' + actionName + ' was failed.: %s', error);
+            });
+
+        // save logs
+        const LogsRef = db.collection('log').doc('Inroom').collection('Logs');
+
+        LogsRef.add({
+            name: roomName,
+            action: actionName,
+            date: firebaseadmin.firestore.FieldValue.serverTimestamp()
+        })
+            .catch((error) => {
+                console.log('adding log was error.:', error);
             });
 
         return handlerInput.responseBuilder
@@ -602,12 +614,12 @@ function handleEvent(event) {
 
                             // get registration information for TVbans
                             if (dbdata[key] == false) {
-                                text_string += key + "は不在状態です。\n";
+                                text_string += key + "：不在\n";
                             }
                             else {
-                                text_string += key + "は在室状態です。\n";
+                                text_string += key + "：在室\n";
                             }
-                            newData.label = key + "のログを表示する。";
+                            newData.label = key + "のログ表示";
                             newData.data = "action=showInroomLogs&room=" + key;
 
                             actions.push(newData);
@@ -620,6 +632,7 @@ function handleEvent(event) {
                             altText: "在室状況",
                             template: {
                                 type: "buttons",
+                                title: "在室状況",
                                 text: text_string,
                                 actions: actions
                             }
@@ -629,6 +642,42 @@ function handleEvent(event) {
                 .catch((error) => {
                     console.log('getting Inroom status was error.:', error);
                 });
+        }
+        // selected show Inroom Logs
+        else if (event.postback.data.startsWith("action=showInroomLogs")) {
+            console.log("show Inroom Logs was fired.");
+
+            // get room_name from postback data
+            let roomName = event.postback.data.substr(27);
+            let logtext = roomName + 'のログ一覧(最新20件)\n';
+
+            // view logs of target cec_name
+            db.collection('log').doc('Inroom').collection('Logs')
+                .where('name', '=', roomName)
+                .orderBy('date', 'desc').limit(20)
+                .get()
+                .then(querySnapshot => {
+                    querySnapshot.forEach(queryDocumentSnapshot => {
+                        let data = queryDocumentSnapshot.data();
+                        let date = data.date.toDate();
+                        let year = date.getFullYear();
+                        let month = ("0" + (date.getMonth() + 1)).slice(-2);
+                        let day = ("0" + date.getDate()).slice(-2);
+                        let hour = ("0" + date.getHours()).slice(-2);
+                        let min = ("0" + date.getMinutes()).slice(-2);
+                        let sec = ("0" + date.getSeconds()).slice(-2);
+
+                        let showDate = `${year}/${month}/${day} ${hour}:${min}:${sec}`
+                        logtext = logtext + ' ' + showDate + '-> ' + data.action + 'しました。\n'
+                    });
+
+                    // send log data
+                    client.replyMessage(event.replyToken, {
+                        type: "text",
+                        text: logtext,
+                    });
+                });
+
         }
         // selected BAN TV
         else if (event.postback.data == "action=TVStatus") {
