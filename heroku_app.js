@@ -631,7 +631,6 @@ function handleEvent(event) {
                             altText: "在室状況",
                             template: {
                                 type: "buttons",
-                                title: "在室状況",
                                 text: text_string,
                                 actions: actions
                             }
