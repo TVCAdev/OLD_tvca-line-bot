@@ -13,7 +13,7 @@
     "ask-sdk": "^2.12.1",
     "ask-sdk-express-adapter": "^2.12.1",
     "express": "^4.17.1",
-    "firebase-admin": "^10.1.0",
+    "firebase-admin": "^11.4.1",
     "socket.io": "^4.4.0"
   }
 }
